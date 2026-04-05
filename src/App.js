@@ -8,6 +8,7 @@ import Pagedacceuille from './Components/Login/Pagedacceuille';
 import { ChefLayout } from "./Layouts/ChefLayout";
 import AgentListe from "./Components/admin/Components/AgentListe";
 import Parametres from "./Components/admin/Components/parametres/Parametres";
+import BudgetListe from "./Components/Budget/BudgetList";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         {/* <Route index element={<Dashboard />} /> */}
          <Route path="equipe" element={<AgentListe />} />
           <Route path="parametres" element={<Parametres />} />
+          <Route path="projets" element={<BudgetListe/>} />
          
         </Route>
 
