@@ -7,7 +7,9 @@ import Login from './Components/Login/Login';
 import Pagedacceuille from './Components/Login/Pagedacceuille';
 import { ChefLayout } from "./Layouts/ChefLayout";
 import AgentListe from "./Components/admin/Components/AgentListe";
+import RecapDashboard from './Components/admin/Components/Recap/RecapDashboard';
 import Parametres from "./Components/admin/Components/parametres/Parametres";
+import FamilleRegion from "./Components/admin/Components/classification/FamilleRegion";
 
 function App() {
   return (
@@ -25,7 +27,9 @@ function App() {
         <Route path="/chef" element={<ChefLayout />}>
         {/* <Route index element={<Dashboard />} /> */}
          <Route path="equipe" element={<AgentListe />} />
+          <Route path="recap" element={<RecapDashboard />} />
           <Route path="parametres" element={<Parametres />} />
+          <Route path="classification" element={<FamilleRegion />} />
          
         </Route>
 
