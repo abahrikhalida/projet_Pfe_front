@@ -10,7 +10,7 @@ import AgentListe from "./Components/admin/Components/AgentListe";
 import RecapDashboard from './Components/admin/Components/Recap/RecapDashboard';
 import Parametres from "./Components/admin/Components/parametres/Parametres";
 import BudgetListe from "./Components/Budget/BudgetList";
-import FamilleRegion from "./Components/admin/Components/classification/FamilleRegion";
+import RegionFamilleRecap from "./Components/admin/Components/classification/familleRegion";
 
 function App() {
   return (
@@ -31,7 +31,7 @@ function App() {
           <Route path="recap" element={<RecapDashboard />} />
           <Route path="parametres" element={<Parametres />} />
           <Route path="projets" element={<BudgetListe/>} />
-          <Route path="classification" element={<FamilleRegion />} />
+          <Route path="classification" element={<RegionFamilleRecap/>} />
          
         </Route>
 
