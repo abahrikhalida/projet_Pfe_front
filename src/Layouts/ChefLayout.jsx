@@ -4,6 +4,7 @@ import axiosInstance from "../axios"; // IMPORTANT: importer axiosInstance
 import { ReactComponent as DashboardIcon } from "../Assets/Icons/dash.svg";
 import { ReactComponent as ParametersIcon } from "../Assets/Icons/param.svg";
 import { ReactComponent as ThemesIcon } from "../Assets/Icons/projetctl.svg";
+//hjklm
 import { ReactComponent as GroupesIcon } from "../Assets/Icons/equipe.svg";
 import { ReactComponent as ClassificationIcon } from "../Assets/Icons/classification.svg";
 import { ReactComponent as RisqueIcon  } from "../Assets/Icons/risk.svg";
@@ -27,6 +28,7 @@ export const ChefLayout = () => {
 
   const projectMenuItems = [
     { name: "Projets", icon: <ThemesIcon />, path: "/chef/projets" },
+    { name: "Recap", icon: <ThemesIcon />, path: "/chef/recap" },
     { name: "Classification", icon: <ClassificationIcon />, path: "/chef/classification" },
     { name: "Risque Analyse", icon: <RisqueIcon />, path: "/chef/risque" },
     { name: "Rapport", icon: <RapportIcon />, path: "/chef/rapport" },
