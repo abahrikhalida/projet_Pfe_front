@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { axiosApi } from '../../axios';
+import { axiosInstance } from '../../axios';
 import { ReactComponent as SearchIcon } from '../../Assets/Icons/Search.svg';
 import { ReactComponent as UploadIcon } from '../../Assets/Icons/Arrow.svg';
 import { ReactComponent as DownloadIcon } from '../../Assets/Icons/download-svgrepo-com.svg';
@@ -67,7 +67,7 @@ const BudgetListe = () => {
     const fetchUploads = async () => {
         try {
             setLoading(true);
-            const response = await axiosApi.get('/uploads/');
+            const response = await axiosInstance.get('/recap//uploads/');
             console.log("Uploads reçus:", response.data);
             setUploads(response.data);
             
@@ -88,7 +88,7 @@ const BudgetListe = () => {
     const fetchRecords = async (uploadId) => {
         try {
             setLoading(true);
-            const response = await axiosApi.get(`/records/?upload_id=${uploadId}`);
+            const response = await axiosInstance.get(`/recap/records/?upload_id=${uploadId}`);
             console.log("Records reçus:", response.data);
             setRecords(response.data);
             setSelectedUploadId(uploadId);
@@ -107,7 +107,7 @@ const BudgetListe = () => {
     // Télécharger PDF
     const handleDownloadPDF = async (recordId) => {
         try {
-            const response = await axiosApi.get(`/export/pdf/${recordId}/`, {
+            const response = await axiosInstance.get(`/recap/export/pdf/${recordId}/`, {
                 responseType: 'blob'
             });
             
@@ -153,7 +153,7 @@ const BudgetListe = () => {
         formData.append('file', selectedFile);
 
         try {
-            const response = await axiosApi.post('/upload/', formData, {
+            const response = await axiosInstance.post('/recap/upload/', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             
