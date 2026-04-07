@@ -10,7 +10,7 @@ import AgentListe from "./Components/admin/Components/AgentListe";
 import RecapDashboard from './Components/admin/Components/Recap/RecapDashboard';
 import Parametres from "./Components/admin/Components/parametres/Parametres";
 import BudgetListe from "./Components/Budget/BudgetList";
-import RegionFamilleRecap from "./Components/admin/Components/classification/FamilleRegion";
+import RegionFamilleRecap from "./Components/admin/Components/classification/RegionFamille";
 
 function App() {
   return (
