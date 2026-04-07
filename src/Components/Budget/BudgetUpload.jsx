@@ -31,7 +31,7 @@ const BudgetUpload = ({ onCancel, onSuccess }) => {
         formData.append('file', file);
 
         try {
-            const response = await axiosApi.post('/upload/', formData, {
+            const response = await axiosApi.post('/recap/upload/', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             

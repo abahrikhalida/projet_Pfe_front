@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { axiosInstance } from "../axios";
+import { fetchRecapFamille } from "../recapApi";
 
 const useFamilleRecap = () => {
   const [familles, setFamilles]           = useState([]);
@@ -8,8 +8,7 @@ const useFamilleRecap = () => {
   const [error, setError]                 = useState(null);
 
   useEffect(() => {
-    axiosInstance
-      .get("/recap/famille/?upload_id=3")
+    fetchRecapFamille()
       .then((res) => {
         setFamilles(res.data.familles);
         setTotalDivision(res.data.total_division_production);
