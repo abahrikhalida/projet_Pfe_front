@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { axiosInstance } from "../axios";
+import { fetchRecaperegionfamille } from "../recapApi";
 
 const useRegionFamilleRecap = () => {
   const [regions, setRegions]         = useState([]);
@@ -8,8 +8,7 @@ const useRegionFamilleRecap = () => {
   const [error, setError]             = useState(null);
 
   useEffect(() => {
-    axiosInstance
-      .get("/recap/region-famille/?upload_id=3")
+    fetchRecaperegionfamille()
       .then((res) => {
         setRegions(res.data.detail);
         setTotalGlobal(res.data.total_global);

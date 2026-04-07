@@ -10,7 +10,7 @@ const useRegionRecap = () => {
 
   useEffect(() => {
     // fetchRecapRegion()
-    fetchRecapRegion(3)
+    fetchRecapRegion()
       .then((res) => {
         setRegions(res.data.regions);
         setTotalDivision(res.data.total_division);

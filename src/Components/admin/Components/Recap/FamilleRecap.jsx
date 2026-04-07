@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { axiosInstance } from "../../../../axios";
+import useFamilleRecap from "../../../../hooks/useFamilleRecap";
+
 
 const currentYear = new Date().getFullYear();
 
@@ -137,26 +139,29 @@ const FamilleModal = ({ famille, onClose }) => {
 
 // Main Component
 const FamilleRecap = () => {
-  const [familles, setFamilles] = useState([]);
-  const [totalDivision, setTotalDivision] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedFamille, setSelectedFamille] = useState(null);
+   const { familles, totalDivision, loading, error } = useFamilleRecap();
 
-  useEffect(() => {
-    const fetchFamilles = async () => {
-      try {
-        const res = await axiosInstance.get("/recap/famille/?upload_id=3");
-        setFamilles(res.data.familles);
-        setTotalDivision(res.data.total_division_production);
-      } catch (err) {
-        setError(err.message || "Erreur de chargement");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFamilles();
-  }, []);
+  // const [familles, setFamilles] = useState([]);
+  // const [totalDivision, setTotalDivision] = useState({});
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState(null);
+   const [selectedFamille, setSelectedFamille] = useState(null);
+
+  // useEffect(() => {
+    
+  //   const fetchFamilles = async () => {
+  //     try {
+  //       const res = await axiosInstance.get("/recap/famille/?upload_id=1");
+  //       setFamilles(res.data.familles);
+  //       setTotalDivision(res.data.total_division_production);
+  //     } catch (err) {
+  //       setError(err.message || "Erreur de chargement");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchFamilles();
+  // }, []);
 
   if (loading)
     return (

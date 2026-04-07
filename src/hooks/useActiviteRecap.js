@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { axiosInstance } from "../axios";
+import { fetchRecapAct } from "../recapApi";
 
 const useActiviteRecap = () => {
   const [activites, setActivites]         = useState([]);
@@ -8,8 +8,7 @@ const useActiviteRecap = () => {
   const [error, setError]                 = useState(null);
 
   useEffect(() => {
-    axiosInstance
-      .get("/recap/activite/?upload_id=3")
+    fetchRecapAct()
       .then((res) => {
         // Si l'API retourne un tableau direct
         if (Array.isArray(res.data)) {
