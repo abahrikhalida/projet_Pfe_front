@@ -1,3 +1,4 @@
+// PerimetreListe.jsx (version avec colonnes bien organisées)
 import {React, useState, useEffect } from 'react';
 import AjouterPerimetre from './AjouterPerimetre';
 import { ReactComponent as EditIcon } from '../../../../Assets/Icons/edit.svg';
@@ -5,7 +6,7 @@ import { ReactComponent as DeleteIcon } from '../../../../Assets/Icons/Delete.sv
 import { ReactComponent as SearchIcon } from '../../../../Assets/Icons/Search.svg';
 import { axiosInstance} from '../../../../axios';
 
-const PerimetreListe = () => {
+const PerimetreListe = ({ isReadOnly = false }) => {
     const [perimetres, setPerimetres] = useState([]);
     const [regions, setRegions] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -95,28 +96,33 @@ const PerimetreListe = () => {
     };
 
     return (
-        <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6 font-kumbh">
+        <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6">
             {/* En-tête */}
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Liste des Périmètres</h2>
-                <button
-                    onClick={() => setShowAjouter(true)}
-                    className="px-5 py-2.5 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition-all duration-200 flex items-center gap-2"
-                >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                    Ajouter Périmètre
-                </button>
+                {!isReadOnly ? (
+                    <button
+                        onClick={() => setShowAjouter(true)}
+                        className="px-4 py-2 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition flex items-center gap-2"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                        Ajouter Périmètre
+                    </button>
+                ) : (
+                    <div className="px-3 py-1.5 bg-gray-100 rounded-lg">
+                        <span className="text-xs text-gray-500">Lecture seule</span>
+                    </div>
+                )}
             </div>
 
-            {/* Filtres et recherche */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-                {/* Filtre par région */}
+            {/* Filtres */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <select
                     value={selectedRegion}
                     onChange={(e) => setSelectedRegion(e.target.value)}
-                    className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white md:min-w-[200px] w-full md:w-auto"
+                    className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white"
                 >
                     <option value="">Toutes les régions</option>
                     {regions.map(region => (
@@ -126,47 +132,36 @@ const PerimetreListe = () => {
                     ))}
                 </select>
 
-                {/* Barre de recherche */}
-                <div className="flex-1 h-[43px] rounded-[20px] border-2 border-[#D9E1E7] hover:border-[#FF8500] focus-within:border-[#FF8500] transition-colors duration-200">
-                    <div className="w-full h-full flex items-center px-4">
-                        <SearchIcon className="text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher par nom, code..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-full border-0 outline-none px-4 font-kumbh text-sm placeholder:text-[#8A8A8A]"
-                        />
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                                </svg>
-                            </button>
-                        )}
-                    </div>
+                <div></div>
+
+                <div className="h-[43px] rounded-[20px] border-2 border-[#D9E1E7] hover:border-[#FF8500] focus-within:border-[#FF8500] transition-colors duration-200 flex items-center px-4">
+                    <SearchIcon className="text-gray-400 w-4 h-4" />
+                    <input
+                        type="text"
+                        placeholder="Rechercher par nom, code..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full h-full border-0 outline-none px-3 text-sm"
+                    />
                 </div>
             </div>
 
             {/* Statistiques */}
             <div className="mb-4 text-sm text-gray-500">
-                {filteredPerimetres.length} 
+                {filteredPerimetres.length} périmètre(s)
                 {selectedRegion && ` dans la région sélectionnée`}
             </div>
 
-            {/* Tableau avec largeurs ajustées */}
-            <div className="overflow-x-auto rounded-lg border border-gray-100">
-                <table className="w-full table-fixed">
+            {/* Tableau avec largeurs équilibrées */}
+            <div className="overflow-x-auto">
+                <table className="w-full">
                     <thead>
-                        <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
-                            <th className="w-[15%] py-4 px-4 text-left text-sm font-semibold text-[#4A4A4A] rounded-tl-lg">Code</th>
-                            <th className="w-[25%] py-4 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Nom</th>
-                            <th className="w-[25%] py-4 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Région</th>
-                            <th className="w-[20%] py-4 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Créé le</th>
-                            <th className="w-[15%] py-4 px-4 text-left text-sm font-semibold text-[#4A4A4A] rounded-tr-lg">Actions</th>
+                        <tr className="bg-[#F9F9F9] border border-[#E4E4E4]">
+                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[15%] rounded-l-lg">Code</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[30%]">Nom</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[25%]">Région</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[15%]">Créé le</th>
+                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[15%] rounded-r-lg">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -176,7 +171,7 @@ const PerimetreListe = () => {
                                     <div className="flex justify-center">
                                         <div className="w-8 h-8 border-4 border-[#FF8500] border-t-transparent rounded-full animate-spin"></div>
                                     </div>
-                                </td>
+                                 </td> 
                             </tr>
                         ) : (
                             filteredPerimetres.map((perimetre, index) => (
@@ -186,49 +181,55 @@ const PerimetreListe = () => {
                                         index % 2 === 0 ? 'bg-white' : 'bg-[#FCFCFC]'
                                     }`}
                                 >
-                                    <td className="py-4 px-4 align-middle">
-                                        <div className="flex items-center h-full min-h-[48px]">
-                                            <span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs font-medium">
-                                                {perimetre.code_perimetre}
-                                            </span>
-                                        </div>
+                                    <td className="py-3 px-4">
+                                        <span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs font-medium inline-block">
+                                            {perimetre.code_perimetre}
+                                        </span>
                                     </td>
-                                    <td className="py-4 px-4 align-middle">
-                                        <div className="flex items-center h-full min-h-[48px] text-sm font-medium text-gray-800">
+                                    <td className="py-3 px-4">
+                                        <span className="text-sm font-medium text-gray-800">
                                             {perimetre.nom_perimetre}
-                                        </div>
+                                        </span>
                                     </td>
-                                    <td className="py-4 px-4 align-middle">
-                                        <div className="flex items-center h-full min-h-[48px]">
-                                            <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
-                                                {getRegionName(perimetre.region)}
-                                            </span>
-                                        </div>
+                                    <td className="py-3 px-4">
+                                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium inline-block">
+                                            {getRegionName(perimetre.region)}
+                                        </span>
                                     </td>
-                                    <td className="py-4 px-4 align-middle">
-                                        <div className="flex items-center h-full min-h-[48px] text-sm text-gray-500">
+                                    <td className="py-3 px-4">
+                                        <span className="text-sm text-gray-500">
                                             {formatDate(perimetre.created_at)}
-                                        </div>
+                                        </span>
                                     </td>
-                                    <td className="py-4 px-4 align-middle">
-                                        <div className="flex items-center h-full min-h-[48px] gap-2">
-                                            <button 
-                                                className="p-2 hover:bg-[#FF8500]/10 rounded-full transition-all duration-200 group"
-                                                title="Modifier"
-                                            >
-                                                <EditIcon className="w-4 h-4 text-gray-500 group-hover:text-[#FF8500]" />
-                                            </button>
-                                            <button 
-                                                onClick={() => {
-                                                    setSelectedPerimetre(perimetre);
-                                                    setShowDeleteConfirm(true);
-                                                }}
-                                                className="p-2 hover:bg-red-50 rounded-full transition-all duration-200 group"
-                                                title="Supprimer"
-                                            >
-                                                <DeleteIcon className="w-4 h-4 text-gray-500 group-hover:text-red-500" />
-                                            </button>
-                                        </div>
+                                    <td className="py-3 px-4">
+                                        {!isReadOnly ? (
+                                            <div className="flex items-center gap-2">
+                                                <button 
+                                                    className="p-1.5 hover:bg-[#FF8500]/10 rounded-full transition-all duration-200 group"
+                                                    title="Modifier"
+                                                >
+                                                    <EditIcon className="w-4 h-4 text-gray-500 group-hover:text-[#FF8500]" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setSelectedPerimetre(perimetre);
+                                                        setShowDeleteConfirm(true);
+                                                    }}
+                                                    className="p-1.5 hover:bg-red-50 rounded-full transition-all duration-200 group"
+                                                    title="Supprimer"
+                                                >
+                                                    <DeleteIcon className="w-4 h-4 text-gray-500 group-hover:text-red-500" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
+                                                <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                <span className="text-xs text-gray-500">Lecture seule</span>
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -247,14 +248,14 @@ const PerimetreListe = () => {
                         <p className="text-gray-400 text-sm mt-1">
                             {selectedRegion 
                                 ? "Aucun périmètre dans cette région" 
-                                : "Cliquez sur 'Ajouter Périmètre' pour créer votre premier périmètre"}
+                                : !isReadOnly && "Cliquez sur 'Ajouter Périmètre' pour créer votre premier périmètre"}
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* Modal Ajouter */}
-            {showAjouter && (
+            {/* Modals - conditionnels */}
+            {!isReadOnly && showAjouter && (
                 <AjouterPerimetre
                     onCancel={() => setShowAjouter(false)}
                     onSuccess={handleSuccess}
@@ -263,10 +264,9 @@ const PerimetreListe = () => {
                 />
             )}
 
-            {/* Modal Confirmation Suppression */}
-            {showDeleteConfirm && selectedPerimetre && (
+            {!isReadOnly && showDeleteConfirm && selectedPerimetre && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 animate-fadeIn">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
                         <div className="text-center mb-6">
                             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <DeleteIcon className="w-8 h-8 text-red-500" />
@@ -296,14 +296,12 @@ const PerimetreListe = () => {
 
             {/* Message succès */}
             {showSuccess && (
-                <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-auto min-w-[300px] bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 rounded-xl shadow-xl z-50 animate-slideUp">
-                    <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <span className="font-medium">{successMessage}</span>
+                <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-[300px] bg-green-500 text-white py-3 px-4 rounded-lg shadow-lg z-50 animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>{successMessage}</span>
                     </div>
                 </div>
             )}
