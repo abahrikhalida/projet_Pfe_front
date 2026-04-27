@@ -22,7 +22,7 @@ function Login() {
         password: formData.password,
       });
 
-      const { access, refresh, role, nom_complet,photo_profil } = response.data;
+      const { access, refresh, role, nom_complet,photo_profil,region_id, structure_id ,region_name, structure_name } = response.data;
 
       // Store tokens and user info
       localStorage.setItem('access_token', access);
@@ -31,28 +31,35 @@ function Login() {
       localStorage.setItem('nom_complet',nom_complet);
      
       localStorage.setItem('photo_profil', photo_profil || '');
+    // Stocker region_id et structure_id
+    if (region_id) localStorage.setItem('region_id', region_id);
+    if (structure_id) localStorage.setItem('structure_id', structure_id);
+    if (region_name) localStorage.setItem('region_name', region_name);
+    if (structure_name) localStorage.setItem('structure_name', structure_name);
+
+      
 
       axiosInstance.defaults.headers['Authorization'] =
         'JWT ' + localStorage.getItem('access_token');
 
       console.log('Connexion réussie:', response.data);
+      
 
-      // Redirect based on role
-      if (role === 'chef') {
-        navigate('/chef');
-      } else if (role === 'directeur') {
-        navigate('/directeur');
-      } else if (role === 'visionnaire') {
-        navigate('/visionnaire');
-      } else if (role === 'agent') {
-        navigate('/agent');
-      } else {
-        console.error('Type d’utilisateur inconnu');
-      }
-    } catch (error) {
-      console.error('Erreur de connexion :', error.response?.data || error.message);
-      setErrorMessage('Email ou mot de passe incorrect');
-    }
+      // Redirection selon le rôle
+   const rolePaths = {
+      'admin': '/admin',
+      'chef': '/chef',
+      'directeur': '/directeur',
+      'directeur_region': '/directeur-region',
+      'responsable_structure': '/responsable-structure',
+      'divisionnaire': '/divisionnaire',
+      'agent': '/agent'
+    };
+      navigate(rolePaths[role] || '/login');
+  } catch (error) {
+    console.error('Erreur de connexion :', error);
+    setErrorMessage('Email ou mot de passe incorrect');
+  }
   };
 
   return (
