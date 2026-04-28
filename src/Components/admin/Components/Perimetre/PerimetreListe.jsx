@@ -160,8 +160,8 @@ const PerimetreListe = ({ isReadOnly = false }) => {
                             <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[15%] rounded-l-lg">Code</th>
                             <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[30%]">Nom</th>
                             <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[25%]">Région</th>
-                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[15%]">Créé le</th>
-                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[15%] rounded-r-lg">Actions</th>
+                            {/* <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[15%]">Créé le</th> */}
+                            <th className="py-3 px-4 text-left text-sm font-medium text-[#727272] w-[10%] rounded-r-lg">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -196,11 +196,11 @@ const PerimetreListe = ({ isReadOnly = false }) => {
                                             {getRegionName(perimetre.region)}
                                         </span>
                                     </td>
-                                    <td className="py-3 px-4">
+                                    {/* <td className="py-3 px-4">
                                         <span className="text-sm text-gray-500">
                                             {formatDate(perimetre.created_at)}
                                         </span>
-                                    </td>
+                                    </td> */}
                                     <td className="py-3 px-4">
                                         {!isReadOnly ? (
                                             <div className="flex items-center gap-2">

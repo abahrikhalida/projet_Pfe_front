@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AjouterFamille from './AjouterFamille';
+import UpdateFamille from './UpdateFamille';
 import { ReactComponent as EditIcon } from '../../../../Assets/Icons/edit.svg';
 import { ReactComponent as DeleteIcon } from '../../../../Assets/Icons/Delete.svg';
 import { ReactComponent as SearchIcon } from '../../../../Assets/Icons/Search.svg';
@@ -7,77 +8,74 @@ import { axiosInstance } from '../../../../axios';
 
 const FamilleListe = ({ isReadOnly = false }) => {
     const [familles, setFamilles] = useState([]);
-    const [regions, setRegions] = useState([]);
-    const [perimetres, setPerimetres] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showAjouter, setShowAjouter] = useState(false);
+    const [showUpdate, setShowUpdate] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedRegion, setSelectedRegion] = useState('');
-    const [selectedPerimetre, setSelectedPerimetre] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [selectedFamille, setSelectedFamille] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-    const fetchData = async () => {
+    const fetchFamilles = async () => {
         setLoading(true);
         try {
-            const [famillesRes, regionsRes, perimetresRes] = await Promise.all([
-                axiosInstance.get('/params/familles'),
-                axiosInstance.get('/params/regions'),
-                axiosInstance.get('/params/perimetres')
-            ]);
-            setFamilles(famillesRes.data.data || []);
-            setRegions(regionsRes.data.data || []);
-            setPerimetres(perimetresRes.data.data || []);
+            const response = await axiosInstance.get('/params/familles');
+            setFamilles(response.data.data || []);
         } catch (err) {
-            console.error("Erreur chargement données:", err);
+            console.error("Erreur chargement familles:", err);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
+        fetchFamilles();
     }, []);
+
+    const handleDelete = async () => {
+        if (!selectedFamille) return;
+        try {
+            await axiosInstance.delete(`/familles/${selectedFamille._id}`);
+            setShowDeleteConfirm(false);
+            setSelectedFamille(null);
+            handleSuccess('Famille supprimée avec succès');
+        } catch (err) {
+            console.error("Erreur suppression:", err);
+            alert(err.response?.data?.message || "Erreur lors de la suppression");
+        }
+    };
 
     const handleSuccess = (message) => {
         setShowAjouter(false);
+        setShowUpdate(false);
         setSuccessMessage(message);
         setShowSuccess(true);
-        fetchData();
+        fetchFamilles();
         setTimeout(() => setShowSuccess(false), 3000);
     };
 
-    const filteredPerimetres = selectedRegion ? perimetres.filter(p => p.region === selectedRegion) : perimetres;
-
     const filteredFamilles = familles.filter(famille => {
         const search = searchTerm.toLowerCase();
-        const matchesSearch = 
+        return (
             famille.nom_famille?.toLowerCase().includes(search) ||
-            famille.code_famille?.toLowerCase().includes(search) ||
-            famille.champs?.toLowerCase().includes(search) ||
-            famille.description?.toLowerCase().includes(search);
-        const matchesRegion = selectedRegion ? famille.region === selectedRegion : true;
-        const matchesPerimetre = selectedPerimetre ? famille.perimetre === selectedPerimetre : true;
-        return matchesSearch && matchesRegion && matchesPerimetre;
+            famille.code_famille?.toLowerCase().includes(search)
+        );
     });
 
-    const getRegionName = (regionCode) => {
-        const region = regions.find(r => r.code_region === regionCode);
-        return region ? region.nom_region : regionCode;
-    };
-
-    const getPerimetreName = (perimetreCode) => {
-        const perimetre = perimetres.find(p => p.code_perimetre === perimetreCode);
-        return perimetre ? perimetre.nom_perimetre : perimetreCode;
-    };
-
     return (
-        <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6 font-kumbh">
+            {/* En-tête */}
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">Liste des Familles</h2>
                 {!isReadOnly ? (
-                    <button onClick={() => setShowAjouter(true)} className="px-4 py-2 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition flex items-center gap-2">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    <button
+                        onClick={() => setShowAjouter(true)}
+                        className="px-5 py-2.5 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition-all duration-200 flex items-center gap-2"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
                         Ajouter Famille
                     </button>
                 ) : (
@@ -87,84 +85,175 @@ const FamilleListe = ({ isReadOnly = false }) => {
                 )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
-                <select value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); setSelectedPerimetre(''); }} className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white">
-                    <option value="">Toutes les régions</option>
-                    {regions.map(region => (<option key={region.code_region} value={region.code_region}>{region.nom_region}</option>))}
-                </select>
-
-                <select value={selectedPerimetre} onChange={(e) => setSelectedPerimetre(e.target.value)} disabled={!selectedRegion} className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
-                    <option value="">Tous les périmètres</option>
-                    {filteredPerimetres.map(perimetre => (<option key={perimetre.code_perimetre} value={perimetre.code_perimetre}>{perimetre.nom_perimetre}</option>))}
-                </select>
-
-                <div className="h-[43px] rounded-[20px] border-2 border-[#D9E1E7] hover:border-[#FF8500] focus-within:border-[#FF8500] transition-colors duration-200 flex items-center px-4">
+            {/* Barre de recherche */}
+            <div className="mb-6">
+                <div className="w-full h-[43px] rounded-[20px] border-2 border-[#D9E1E7] hover:border-[#FF8500] focus-within:border-[#FF8500] transition-colors duration-200 flex items-center px-4">
                     <SearchIcon className="text-gray-400" />
-                    <input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-full border-0 outline-none px-2" />
+                    <input
+                        type="text"
+                        placeholder="Rechercher par nom ou code..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full h-full border-0 outline-none px-4 font-kumbh text-sm"
+                    />
                 </div>
             </div>
 
-            <div className="mb-4 text-sm text-gray-500">{filteredFamilles.length} famille(s)</div>
+            {/* Statistiques */}
+            <div className="mb-4 text-sm text-gray-500">
+                {filteredFamilles.length} famille(s)
+            </div>
 
+            {/* Tableau */}
             <div className="overflow-x-auto rounded-lg border border-gray-100">
-                <table className="w-full">
+                <table className="w-full min-w-[600px]">
                     <thead>
                         <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Code</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Nom</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Champs</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Région</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Périmètre</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Description</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Actions</th>
+                            <th className="py-3 px-6 text-left text-sm font-semibold text-[#4A4A4A] rounded-tl-lg w-[20%]">Code</th>
+                            <th className="py-3 px-6 text-left text-sm font-semibold text-[#4A4A4A] w-[55%]">Nom</th>
+                            <th className="py-3 px-6 text-center text-sm font-semibold text-[#4A4A4A] rounded-tr-lg w-[25%]">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredFamilles.map((famille, index) => (
-                            <tr key={famille._id || famille.code_famille} className={`border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-[#FCFCFC]'}`}>
-                                <td className="py-3 px-4"><span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs font-medium">{famille.code_famille}</span></td>
-                                <td className="py-3 px-4 text-sm font-medium text-gray-800">{famille.nom_famille}</td>
-                                <td className="py-3 px-4"><span className="px-2 py-1 bg-[#17BEBB]/10 text-[#17BEBB] rounded-full text-xs">{famille.champs}</span></td>
-                                <td className="py-3 px-4"><span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs">{getRegionName(famille.region)}</span></td>
-                                <td className="py-3 px-4"><span className="px-2 py-1 bg-[#884DFF]/10 text-[#884DFF] rounded-full text-xs">{getPerimetreName(famille.perimetre)}</span></td>
-                                <td className="py-3 px-4 text-sm text-gray-600">{famille.description || '-'}</td>
-                                <td className="py-3 px-4">
-                                    <div className="flex gap-2">
-                                        {!isReadOnly ? (
-                                            <>
-                                                <button className="p-1.5 hover:bg-[#FF8500]/10 rounded-full transition-all duration-200 group" title="Modifier">
-                                                    <EditIcon className="w-4 h-4 text-gray-500 group-hover:text-[#FF8500]" />
-                                                </button>
-                                                <button className="p-1.5 hover:bg-red-50 rounded-full transition-all duration-200 group" title="Supprimer">
-                                                    <DeleteIcon className="w-4 h-4 text-gray-500 group-hover:text-red-500" />
-                                                </button>
-                                            </>
-                                        ) : (
-                                            // <span className="text-xs text-gray-400 italic">Aucune action</span>
-                                               <div className="mt-3 inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
-                                        <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                        <span className="text-xs text-gray-500">Lecture seule</span>
+                        {loading ? (
+                            <tr>
+                                <td colSpan="3" className="py-8 text-center">
+                                    <div className="flex justify-center">
+                                        <div className="w-8 h-8 border-4 border-[#FF8500] border-t-transparent rounded-full animate-spin"></div>
                                     </div>
-                                        )}
-                                    </div>
+                                    <p className="text-sm text-gray-500 mt-2">Chargement...</p>
+                                  
                                 </td>
                             </tr>
-                        ))}
+                        ) : filteredFamilles.length === 0 ? (
+                            <tr>
+                                <td colSpan="3" className="text-center py-8 text-gray-500">
+                                    <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p>Aucune famille trouvée</p>
+                                  
+                                </td>
+                            </tr>
+                        ) : (
+                            filteredFamilles.map((famille, index) => (
+                                <tr 
+                                    key={famille._id} 
+                                    className={`border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150 ${
+                                        index % 2 === 0 ? 'bg-white' : 'bg-[#FCFCFC]'
+                                    }`}
+                                >
+                                    <td className="py-3 px-6">
+                                        <span className="inline-block px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs font-medium min-w-[70px] text-center">
+                                            {famille.code_famille}
+                                        </span>
+                                    </td>
+                                    <td className="py-3 px-6">
+                                        <span className="text-sm font-medium text-gray-800">{famille.nom_famille}</span>
+                                    </td>
+                                    <td className="py-3 px-6">
+                                        <div className="flex gap-3 justify-center items-center">
+                                            {!isReadOnly ? (
+                                                <>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedFamille(famille);
+                                                            setShowUpdate(true);
+                                                        }}
+                                                        className="p-2 hover:bg-[#FF8500]/10 rounded-full transition-all duration-200 group"
+                                                        title="Modifier"
+                                                    >
+                                                        <EditIcon className="w-4 h-4 text-gray-500 group-hover:text-[#FF8500]" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedFamille(famille);
+                                                            setShowDeleteConfirm(true);
+                                                        }}
+                                                        className="p-2 hover:bg-red-50 rounded-full transition-all duration-200 group"
+                                                        title="Supprimer"
+                                                    >
+                                                        <DeleteIcon className="w-4 h-4 text-gray-500 group-hover:text-red-500" />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 rounded-full">
+                                                    <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <span className="text-xs text-gray-500">Lecture seule</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
-                {filteredFamilles.length === 0 && !loading && <div className="text-center py-8 text-gray-500">Aucune famille trouvée</div>}
             </div>
 
+            {/* Modal Ajouter */}
             {!isReadOnly && showAjouter && (
-                <AjouterFamille onCancel={() => setShowAjouter(false)} onSuccess={handleSuccess} axiosInstance={axiosInstance} regions={regions} perimetres={perimetres} />
+                <AjouterFamille
+                    onCancel={() => setShowAjouter(false)}
+                    onSuccess={(msg) => handleSuccess(msg)}
+                    axiosInstance={axiosInstance}
+                />
             )}
 
+            {/* Modal Modifier */}
+            {!isReadOnly && showUpdate && selectedFamille && (
+                <UpdateFamille
+                    famille={selectedFamille}
+                    onCancel={() => {
+                        setShowUpdate(false);
+                        setSelectedFamille(null);
+                    }}
+                    onSuccess={(msg) => handleSuccess(msg)}
+                    axiosInstance={axiosInstance}
+                />
+            )}
+
+            {/* Modal Confirmation Suppression */}
+            {!isReadOnly && showDeleteConfirm && selectedFamille && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <DeleteIcon className="w-8 h-8 text-red-500" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Confirmer la suppression</h3>
+                            <p className="text-gray-600">
+                                Êtes-vous sûr de vouloir supprimer la famille <span className="font-semibold text-[#FF8500]">{selectedFamille.nom_famille}</span> ?
+                            </p>
+                            <p className="text-xs text-red-500 mt-2">
+                                Attention : Cette action est irréversible.
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+                            >
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Message de succès */}
             {showSuccess && (
-                <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-[300px] bg-green-500 text-white py-3 px-4 rounded-lg shadow-lg z-50 animate-fadeIn">
-                    <div className="flex items-center gap-2"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg><span>{successMessage}</span></div>
+                <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-500 text-white py-3 px-6 rounded-lg shadow-lg z-50 animate-fadeIn">
+                    ✅ {successMessage}
                 </div>
             )}
         </div>
