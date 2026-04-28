@@ -8,6 +8,8 @@ import { DivisionnaireLayout } from './Layouts/DivisionnaireLayout';
 import AffectationResponsable from './Components/directeur_region/AffectationResponsable';
 import ProjetsListe  from './Components/admin/Components/Projets/ProjetsListe';
 import Parametres from './Components/admin/Components/parametres/Parametres'
+import ParametresCentral from './Components/admin/Components/parametres/ParametresCentral'
+
 import Login from './Components/Login/Login';
 import {AdminLayout} from './Layouts/AdminLayout';
 import UsersListe from "./Components/admin/Components/utilisateurs/UsersListe"
@@ -45,7 +47,9 @@ const router = createBrowserRouter([
     { path: "utilisateurs", element:<UsersListe/> },
     { path: "affectation", element: <Affectation/> },
     // { path: "structures", element: <div>Dashboard Chef</div> },
-    { path: "parametres", element: <Parametres/>},
+ 
+        { path: "parametres", element: <Parametres /> },
+    { path: "parametres-centraux", element: <ParametresCentral /> },
         {path: 'projets', element: <ProjetsAdmin />},
 
     { path: "profile", element:<div>Dashboard Chef</div> },

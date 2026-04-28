@@ -152,9 +152,9 @@ const StructureListe = ({ isReadOnly = false }) => {
                         <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
                             <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Code</th>
                             <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Nom</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Type</th>
+                            {/* <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Type</th> */}
                             <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Région</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Description</th>
+                            {/* <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Description</th> */}
                             <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Actions</th>
                         </tr>
                     </thead>
@@ -163,9 +163,9 @@ const StructureListe = ({ isReadOnly = false }) => {
                             <tr key={structure._id} className={`border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-[#FCFCFC]'}`}>
                                 <td className="py-3 px-4"><span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs font-medium">{structure.code_structure}</span></td>
                                 <td className="py-3 px-4 text-sm font-medium text-gray-800">{structure.nom_structure}</td>
-                                <td className="py-3 px-4"><span className="px-2 py-1 rounded-full text-xs text-white" style={{ backgroundColor: getTypeColor(structure.type_structure) }}>{getTypeLabel(structure.type_structure)}</span></td>
+                                {/* <td className="py-3 px-4"><span className="px-2 py-1 rounded-full text-xs text-white" style={{ backgroundColor: getTypeColor(structure.type_structure) }}>{getTypeLabel(structure.type_structure)}</span></td> */}
                                 <td className="py-3 px-4"><span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs">{getRegionName(structure.region?._id || structure.region)}</span></td>
-                                <td className="py-3 px-4 text-sm text-gray-600">{structure.description || '-'}</td>
+                                {/* <td className="py-3 px-4 text-sm text-gray-600">{structure.description || '-'}</td> */}
                                 <td className="py-3 px-4">
                                     <div className="flex gap-2">
                                         {!isReadOnly ? (

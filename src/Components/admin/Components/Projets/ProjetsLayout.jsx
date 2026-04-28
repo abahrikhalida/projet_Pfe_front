@@ -372,7 +372,7 @@ const ProjetsLayout = ({
                                                     </div>
                                                     {projet.cout_initial_dont_dex && (
                                                         <div className="text-xs text-orange-500">
-                                                            DEV : {parseFloat(projet.cout_initial_dont_dex).toLocaleString()} DA
+                                                            DEV {parseFloat(projet.cout_initial_dont_dex).toLocaleString()} DA
                                                         </div>
                                                     )}
                                                 </td>

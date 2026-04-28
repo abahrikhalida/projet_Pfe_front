@@ -7,41 +7,41 @@ import { ReactComponent as ParametersIcon } from "../Assets/Icons/param.svg";
 import { ReactComponent as ThemesIcon } from "../Assets/Icons/projetctl.svg";
 import { ReactComponent as GroupesIcon } from "../Assets/Icons/equipe.svg";
 import { ReactComponent as ChainIcon } from "../Assets/Icons/Affectation.svg";
-
 import { ReactComponent as ClassificationIcon } from "../Assets/Icons/classification.svg";
 import { ReactComponent as RisqueIcon } from "../Assets/Icons/risk.svg";
 import { ReactComponent as RapportIcon } from "../Assets/Icons/rapport.svg";
 import { ReactComponent as SettingIcon } from "../Assets/Icons/setting-2.svg";
 import { ReactComponent as ProfileIcon } from "../Assets/Icons/profile.svg";
-
 import { ReactComponent as NotifIcon } from "../Assets/Icons/notif.svg";
 import { ReactComponent as DeconxxionIcon } from "../Assets/Icons/logout.svg";
-import { ReactComponent as UsersIcon } from "../Assets/Icons/rapport.svg";
-import { ReactComponent as RegionsIcon } from "../Assets/Icons/rapport.svg";
 import { ReactComponent as AuditIcon } from "../Assets/Icons/rapport.svg";
+import { ReactComponent as ArrowDownIcon } from "../Assets/Icons/Account.svg";
 import TopBar from "../Components/Partials/Components/TopBar";
 
 export const AdminLayout = () => {
   const [activeMainMenu, setActiveMainMenu] = useState("Dashboard");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [adminInfo, setAdminInfo] = useState({});
+  const [openDropdown, setOpenDropdown] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const nomComplet = localStorage.getItem('nom_complet');
     setAdminInfo({ nomComplet });
     
-    // Vérifier si l'utilisateur a le rôle admin
     const role = localStorage.getItem('role');
     if (role !== 'admin') {
       navigate('/unauthorized');
     }
   }, [navigate]);
 
+  const toggleDropdown = (menuName) => {
+    setOpenDropdown(prev => ({ ...prev, [menuName]: !prev[menuName] }));
+  };
+
   // Menu Principal Admin
   const mainMenuItems = [
     { name: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
-    { name: "Paramètres", icon: <ParametersIcon />, path: "/admin/parametres" },
     { name: "Utilisateurs", icon: <GroupesIcon />, path: "/admin/utilisateurs" },
     { name: "Affectations", icon: <ChainIcon />, path: "/admin/affectation" },
   ];
@@ -55,8 +55,14 @@ export const AdminLayout = () => {
     { name: "Rapport", icon: <RapportIcon />, path: "/admin/rapport" },
   ];
 
-  // Menu Paramètres
+  // Menu Paramètres avec sous-menus
   const settingsMenuItems = [
+    { name: "Régionaux", icon: <ParametersIcon />, path: "/admin/parametres" },
+    { name: "Centraux", icon: <SettingIcon />, path: "/admin/parametres-centraux" },
+  ];
+
+  // Autres paramètres (Profile, Notification, etc.)
+  const otherSettingsItems = [
     { name: "Profile", icon: <ProfileIcon />, path: "/admin/profile" },
     { name: "Notification", icon: <NotifIcon />, path: "/admin/notification" },
     { name: "Journal d'audit", icon: <AuditIcon />, path: "/admin/audit" },
@@ -112,6 +118,61 @@ export const AdminLayout = () => {
     </NavLink>
   );
 
+  // Composant pour un item avec dropdown
+  const DropdownMenuItem = ({ title, icon, items }) => {
+    const isOpen = openDropdown[title];
+    
+    return (
+      <div>
+        <div
+          className="flex items-center justify-between px-6 py-3 text-gray-600 hover:bg-[#FF8500] hover:text-white transition-all duration-200 cursor-pointer"
+          onClick={() => toggleDropdown(title)}
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-5 h-5 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current text-gray-700">
+              {icon}
+            </span>
+            <span className="text-sm font-medium">{title}</span>
+          </div>
+          <svg 
+            className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        
+        {isOpen && (
+          <div className="ml-4">
+            {items.map((item, idx) => (
+              <NavLink
+                key={idx}
+                to={item.path}
+                onClick={() => setActiveMainMenu(item.name)}
+                className={({ isActive }) => 
+                  `flex items-center gap-3 px-6 py-2.5 text-gray-500 hover:bg-[#FF8500] hover:text-white transition-all duration-200 ${
+                    isActive || activeMainMenu === item.name ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500' : ''
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`w-5 h-5 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current ${
+                      isActive || activeMainMenu === item.name ? 'text-indigo-600' : 'text-gray-500'
+                    }`}>
+                      {item.icon}
+                    </span>
+                    <span className="text-sm">{item.name}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="grid grid-cols-[220px_1fr] min-h-screen">
       {/* Sidebar */}
@@ -123,21 +184,43 @@ export const AdminLayout = () => {
           </h2>
         </div>
         
-        {/* Scrollbar invisible ici */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hidden">
+          
           {/* Menu Principal */}
           <div className="flex flex-col py-2">
+            <div className="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Principal
+            </div>
+             
+            
+            {/* Dropdown pour Paramètres (Régionaux et Centraux) */}
+          
             {mainMenuItems.map((item, idx) => renderMenuItem(item, idx))}
+              <DropdownMenuItem 
+              title="Paramètres" 
+              icon={<ParametersIcon />}
+              items={settingsMenuItems}
+            />
           </div>
 
           {/* Section Projets */}
-          <div className="flex flex-col py-2 mt-auto border-t border-gray-200 pt-4">
+          <div className="flex flex-col py-2 mt-2">
+            <div className="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Projets
+            </div>
             {projectMenuItems.map((item, idx) => renderMenuItem(item, `project-${idx}`))}
           </div>
        
-          {/* Section Paramètres */}
-          <div className="flex flex-col py-2 mt-auto border-t border-gray-200 pt-4">
-            {settingsMenuItems.map((item, idx) => renderMenuItem(item, `settings-${idx}`))}
+          {/* Section Paramètres avec sous-menu */}
+          <div className="flex flex-col py-2 mt-2">
+            <div className="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              Paramètres
+            </div>
+            
+         
+            
+            {/* Autres paramètres */}
+            {otherSettingsItems.map((item, idx) => renderMenuItem(item, `other-${idx}`))}
           </div>
 
           {/* Déconnexion */}
@@ -176,15 +259,14 @@ export const AdminLayout = () => {
         </main>
       </div>
 
-      {/* Style pour cacher la scrollbar */}
       <style jsx>{`
         .scrollbar-hidden {
-          scrollbar-width: none; /* Firefox */
-          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none;
+          -ms-overflow-style: none;
         }
         
         .scrollbar-hidden::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
+          display: none;
         }
       `}</style>
     </div>

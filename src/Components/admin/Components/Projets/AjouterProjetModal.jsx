@@ -887,10 +887,10 @@ const handleSubmit = async () => {
 
                             {/* Période PMT */}
                             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Période PMT</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2"> PMT</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs text-gray-500">Année début</label>
+                                        {/* <label className="text-xs text-gray-500">Année début</label> */}
                                         <input
                                             type="number"
                                             name="annee_debut_pmt"
@@ -900,7 +900,7 @@ const handleSubmit = async () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-gray-500">Année fin</label>
+                                        {/* <label className="text-xs text-gray-500">Année fin</label> */}
                                         <input
                                             type="number"
                                             name="annee_fin_pmt"
@@ -1171,7 +1171,7 @@ const handleSubmit = async () => {
                                 </p>
                                 <div className="bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-300 px-4 py-1.5 rounded-full shadow-sm">
                                     <span className="text-sm font-medium text-amber-800">
-                                        Total mensuel : <span className="font-bold text-amber-900">{formatCurrency(totalMensuel())}</span>
+                                        Total Prévisions {anneeBase +1} : <span className="font-bold text-amber-900">{formatCurrency(totalMensuel())}</span>
                                     </span>
                                 </div>
                             </div>

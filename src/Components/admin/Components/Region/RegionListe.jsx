@@ -114,92 +114,89 @@ const RegionListe = ({ isReadOnly = false }) => {
                 {filteredRegions.length} région(s)
             </div>
 
-            {/* TABLEAU */}
-            <div className="overflow-x-auto rounded-lg border border-gray-100">
-                <table className="w-full">
-                    <thead>
-                        <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A] rounded-tl-lg">Code</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Nom</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Description</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A]">Créé le</th>
-                            <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A] rounded-tr-lg">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan="5" className="py-8 text-center">
-                                    <div className="flex justify-center">
-                                        <div className="w-8 h-8 border-4 border-[#FF8500] border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
-                                  </td>
-                            </tr>
-                        ) : filteredRegions.length === 0 ? (
-                            <tr>
-                                <td colSpan="5" className="text-center py-8 text-gray-500">
-                                    Aucune région trouvée
-                                 </td>
-                            </tr>
-                        ) : (
-                            filteredRegions.map((region, index) => (
-                                <tr 
-                                    key={region._id || region.code_region} 
-                                    className={`border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150 ${
-                                        index % 2 === 0 ? 'bg-white' : 'bg-[#FCFCFC]'
-                                    }`}
-                                >
-                                    <td className="py-3 px-4">
-                                        <span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs font-medium">
-                                            {region.code_region}
-                                        </span>
-                                    </td>
-                                    <td className="py-3 px-4 text-sm font-medium text-gray-800">{region.nom_region}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-600">{region.description || '-'}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-500 whitespace-nowrap">{formatDate(region.created_at)}</td>
-                                    <td className="py-3 px-4">
-                                        <div className="flex gap-2">
-                                            {!isReadOnly ? (
-                                                <>
-                                                    <button 
-                                                        onClick={() => {
-                                                            setSelectedRegion(region);
-                                                            setShowUpdate(true);
-                                                        }}
-                                                        className="p-1.5 hover:bg-[#FF8500]/10 rounded-full transition-all duration-200 group"
-                                                        title="Modifier"
-                                                    >
-                                                        <EditIcon className="w-4 h-4 text-gray-500 group-hover:text-[#FF8500]" />
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => {
-                                                            setSelectedRegion(region);
-                                                            setShowDeleteConfirm(true);
-                                                        }}
-                                                        className="p-1.5 hover:bg-red-50 rounded-full transition-all duration-200 group"
-                                                        title="Supprimer"
-                                                    >
-                                                        <DeleteIcon className="w-4 h-4 text-gray-500 group-hover:text-red-500" />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                // <span className="text-xs text-gray-400 italic">Aucune action</span>
-                                                   <div className="mt-3 inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
+         {/* TABLEAU */}
+<div className="overflow-x-auto rounded-lg border border-gray-100">
+    <table className="w-full min-w-[600px]">
+        <thead>
+            <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
+                <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A] w-[120px]">Code</th>
+                <th className="py-3 px-4 text-left text-sm font-semibold text-[#4A4A4A] w-[250px]">Nom</th>
+                <th className="py-3 px-6 text-right text-sm font-semibold text-[#4A4A4A] w-[200px]">Actions</th>
+             </tr>
+        </thead>
+        <tbody>
+            {loading ? (
+                <tr>
+                    <td colSpan="3" className="py-8 text-center">
+                        <div className="flex justify-center">
+                            <div className="w-8 h-8 border-4 border-[#FF8500] border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                     </td>
+                </tr>
+            ) : filteredRegions.length === 0 ? (
+                <tr>
+                    <td colSpan="3" className="text-center py-8 text-gray-500">
+                        Aucune région trouvée
+                     </td>
+                </tr>
+            ) : (
+                filteredRegions.map((region, index) => (
+                    <tr 
+                        key={region._id || region.code_region} 
+                        className={`border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150 ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-[#FCFCFC]'
+                        }`}
+                    >
+                        <td className="py-3 px-4">
+                            <span className="px-2 py-1 bg-[#FF8500]/10 text-[#FF8500] rounded-full text-xs font-medium inline-block min-w-[80px] text-center">
+                                {region.code_region}
+                            </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-800 break-word">
+                            {region.nom_region}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                            <div className="flex gap-2 justify-end">
+                                {!isReadOnly ? (
+                                    <>
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedRegion(region);
+                                                setShowUpdate(true);
+                                            }}
+                                            className="p-1.5 hover:bg-[#FF8500]/10 rounded-full transition-all duration-200 group"
+                                            title="Modifier"
+                                        >
+                                            <EditIcon className="w-4 h-4 text-gray-500 group-hover:text-[#FF8500]" />
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedRegion(region);
+                                                setShowDeleteConfirm(true);
+                                            }}
+                                            className="p-1.5 hover:bg-red-50 rounded-full transition-all duration-200 group"
+                                            title="Supprimer"
+                                        >
+                                            <DeleteIcon className="w-4 h-4 text-gray-500 group-hover:text-red-500" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
                                         <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                         <span className="text-xs text-gray-500">Lecture seule</span>
                                     </div>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                                )}
+                            </div>
+                        </td>
+                    </tr>
+                ))
+            )}
+        </tbody>
+    </table>
+</div>
 
             {/* Modal Ajouter Region */}
             {!isReadOnly && showAjouter && (
