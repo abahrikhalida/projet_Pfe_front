@@ -1,4 +1,3 @@
-// Components/Projets/ProjetsLayout.jsx
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReactComponent as SearchIcon } from '../../../../Assets/Icons/Search.svg';
@@ -92,7 +91,12 @@ const ProjetsLayout = ({
     getRegionNom,
     validationActions,
     showValidationColumn = true,
-    onViewDetails
+    onViewDetails,
+    onViewHistory,
+    entiteType = 'region',
+    getEntiteNom = null,
+    customColumns = null,
+    customRenderRow = null
 }) => {
     const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -141,8 +145,61 @@ const ProjetsLayout = ({
         return 'aTraiter';
     };
 
+    const getEntiteLabel = () => {
+        return entiteType === 'region' ? 'Région' : 'Direction';
+    };
+
+    const getEntiteValue = (projet) => {
+        if (customRenderRow) return null;
+        
+        if (getEntiteNom) {
+            return getEntiteNom(projet);
+        }
+        
+        if (entiteType === 'region') {
+            return projet.region_nom || getRegionNom(projet.region_id) || '-';
+        } else {
+            return projet.direction_nom || projet.direction || '-';
+        }
+    };
+
+    // Modification des largeurs des colonnes
+    const defaultColumns = [
+        { key: 'code_division', label: 'Code Division', width: 'w-24' },
+        { key: 'libelle', label: 'Libellé', width: 'w-56' },
+        { key: 'entite', label: getEntiteLabel(), width: 'w-28' },
+        { key: 'activite', label: 'Activité', width: 'w-28' },
+        { key: 'cout', label: 'Coût Global', width: 'w-36' },
+        { key: 'statut', label: 'Statut', width: 'w-40' },
+        { key: 'actions', label: 'Actions', width: 'w-24' }
+    ];
+
+    if (showValidationColumn && canShowValidationActions) {
+        defaultColumns.push({ key: 'validation', label: 'Validation', width: 'w-32' });
+    }
+
+    const columns = customColumns || defaultColumns;
+
+    const styles = `
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    `;
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+            <style>{styles}</style>
+            
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -186,7 +243,7 @@ const ProjetsLayout = ({
                                     relative bg-white rounded-xl shadow-md overflow-hidden cursor-pointer
                                     transition-all duration-300 border
                                     ${activeTab === tab.id 
-                                        ? `border-[#FF8500] shadow-lg ring-2 ring-[#FF8500]/20` 
+                                        ? 'border-[#FF8500] shadow-lg ring-2 ring-[#FF8500]/20' 
                                         : 'border-gray-200 hover:shadow-lg'
                                     }
                                 `}
@@ -247,7 +304,7 @@ const ProjetsLayout = ({
                             </div>
                             <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 text-center">
                                 <div className="text-2xl font-bold text-blue-700">{Object.keys(stats.par_region || {}).length}</div>
-                                <div className="text-xs text-blue-600">Régions</div>
+                                <div className="text-xs text-blue-600">{entiteType === 'region' ? 'Régions' : 'Directions'}</div>
                             </div>
                         </div>
                     )}
@@ -259,8 +316,10 @@ const ProjetsLayout = ({
                             onChange={(e) => setSelectedType(e.target.value)}
                             className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white text-sm"
                         >
-                            {typesProjet.map(type => (
-                                <option key={type.value} value={type.value}>{type.label}</option>
+                            {typesProjet.map((type, idx) => (
+                                <option key={`type-${type.value}-${idx}`} value={type.value}>
+                                    {type.label}
+                                </option>
                             ))}
                         </select>
 
@@ -269,8 +328,10 @@ const ProjetsLayout = ({
                             onChange={(e) => setSelectedStatut(e.target.value)}
                             className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white text-sm"
                         >
-                            {statutOptions.map(statut => (
-                                <option key={statut.value} value={statut.value}>{statut.label}</option>
+                            {statutOptions.map((statut, idx) => (
+                                <option key={`statut-${statut.value}-${idx}`} value={statut.value}>
+                                    {statut.label}
+                                </option>
                             ))}
                         </select>
 
@@ -279,9 +340,16 @@ const ProjetsLayout = ({
                             onChange={(e) => setSelectedRegion(e.target.value)}
                             className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white text-sm"
                         >
-                            <option value="">Toutes les régions</option>
-                            {regions.map(region => (
-                                <option key={region._id} value={region._id}>{region.nom_region}</option>
+                            <option key="all-regions" value="">
+                                {entiteType === 'region' ? 'Toutes les régions' : 'Toutes les directions'}
+                            </option>
+                            {regions.map((region, idx) => (
+                                <option 
+                                    key={`region-${region._id || region.id || idx}`} 
+                                    value={region._id || region.id}
+                                >
+                                    {entiteType === 'region' ? region.nom_region : region.nom_direction}
+                                </option>
                             ))}
                         </select>
 
@@ -304,119 +372,135 @@ const ProjetsLayout = ({
                     </div>
 
                     {/* Tableau */}
-                    <div className="rounded-xl border border-gray-100 overflow-x-auto">
-                        <table className="w-full min-w-[800px]">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Code Division</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Libellé</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Région</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Activité</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Coût Global</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Statut</th>
-                                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Actions</th>
-                                    {showValidationColumn && canShowValidationActions && (
-                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600">Validation</th>
+
+
+{/* Tableau */}
+<div className="rounded-xl border border-gray-100 overflow-x-auto">
+    <table className="w-full min-w-[800px] table-auto">
+        <thead>
+            <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                {columns.map(col => (
+                    <th key={col.key} className="py-3 px-3 text-left text-xs font-semibold text-gray-600">
+                        {col.label}
+                    </th>
+                ))}
+             </tr>
+        </thead>
+        <tbody>
+            {loading ? (
+                <tr>
+                    <td colSpan={columns.length} className="py-12 text-center">
+                        <div className="flex justify-center">
+                            <div className="w-8 h-8 border-3 border-[#FF8500] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">Chargement...</p>
+                    </td>
+                </tr>
+            ) : projets.length === 0 ? (
+                <tr>
+                    <td colSpan={columns.length} className="py-12 text-center">
+                        <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-gray-500">Aucun projet trouvé</p>
+                    </td>
+                </tr>
+            ) : customRenderRow ? (
+                customRenderRow(projets)
+            ) : (
+                <AnimatePresence>
+                    {projets.map((projet, index) => {
+                        const uniqueKey = projet.id || projet._id || `${projet.code_division}-${index}`;
+                        return (
+                            <motion.tr 
+                                key={uniqueKey}
+                                custom={index}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ delay: index * 0.03, duration: 0.2 }}
+                                className="border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150"
+                            >
+                                {/* Code Division */}
+                                <td className="py-3 px-3 align-middle">
+                                    <span className="font-mono text-xs font-medium">{projet.code_division}</span>
+                                </td>
+                                
+                                {/* Libellé */}
+                                <td className="py-3 px-3 align-middle">
+                                    <div className="text-sm font-medium text-gray-800">{projet.libelle}</div>
+                                    <div className="text-xs text-gray-400">
+                                        {projet.type_projet === 'nouveau' ? '🆕 Nouveau' : '🔄 En cours'}
+                                    </div>
+                                </td>
+                                
+                                {/* Entité (Région/Direction) */}
+                                <td className="py-3 px-3 align-middle text-xs text-gray-600">
+                                    {getEntiteValue(projet)}
+                                </td>
+                                
+                                {/* Activité */}
+                                <td className="py-3 px-3 align-middle text-xs text-gray-600">
+                                    {projet.activite_nom || projet.activite || '-'}
+                                </td>
+                                
+                                {/* Coût Global */}
+                                <td className="py-3 px-3 align-middle">
+                                    <div className="text-xs font-bold text-gray-800">
+                                        {getBudgetTotal(projet).toLocaleString()} DA
+                                    </div>
+                                    {projet.cout_initial_dont_dex && (
+                                        <div className="text-xs text-orange-500">
+                                            DEV {parseFloat(projet.cout_initial_dont_dex).toLocaleString()} DA
+                                        </div>
                                     )}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={showValidationColumn && canShowValidationActions ? 8 : 7} className="py-12 text-center">
-                                            <div className="flex justify-center">
-                                                <div className="w-8 h-8 border-3 border-[#FF8500] border-t-transparent rounded-full animate-spin" />
-                                            </div>
-                                            <p className="text-xs text-gray-400 mt-2">Chargement...</p>
-                                        </td>
-                                    </tr>
-                                ) : projets.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={showValidationColumn && canShowValidationActions ? 8 : 7} className="py-12 text-center">
-                                            <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            <p className="text-gray-500">Aucun projet trouvé</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    <AnimatePresence>
-                                        {projets.map((projet, index) => (
-                                            <motion.tr 
-                                                key={projet.id || projet.code_division}
-                                                custom={index}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 20 }}
-                                                transition={{ delay: index * 0.03, duration: 0.2 }}
-                                                className="border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150"
+                                </td>
+                                
+                                {/* Statut */}
+                                <td className="py-3 px-3 align-middle">
+                                    {getStatutBadge(projet)}
+                                </td>
+                                
+                                {/* Actions */}
+                                <td className="py-3 px-3 align-middle">
+                                    <div className="flex items-center gap-1">
+                                        {onViewHistory && (
+                                            <button
+                                                onClick={() => onViewHistory(projet)}
+                                                className="p-1 hover:bg-blue-50 rounded-full transition"
+                                                title="Historique"
                                             >
-                                                <td className="py-3 px-4">
-                                                    <span className="font-mono text-sm font-medium">{projet.code_division}</span>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <div className="text-sm font-medium text-gray-800">{projet.libelle}</div>
-                                                    <div className="text-xs text-gray-400 mt-0.5">
-                                                        {projet.type_projet === 'nouveau' ? '🆕 Nouveau' : '🔄 En cours'}
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4 text-sm text-gray-600">
-                                                    {projet.region_nom || getRegionNom(projet.region_id) || '-'}
-                                                </td>
-                                                <td className="py-3 px-4 text-sm text-gray-600">
-                                                    {projet.activite_nom || projet.activite || '-'}
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <div className="text-sm font-bold text-gray-800">
-                                                        {getBudgetTotal(projet).toLocaleString()} DA
-                                                    </div>
-                                                    {projet.cout_initial_dont_dex && (
-                                                        <div className="text-xs text-orange-500">
-                                                            DEV {parseFloat(projet.cout_initial_dont_dex).toLocaleString()} DA
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="py-3 px-4">{getStatutBadge(projet.statut)}</td>
-                                                <td className="py-3 px-4">
-                                                    {/* Bouton Voir Détails (œil) */}
-                                                    <button
-                                                        onClick={() => onViewDetails(projet)}
-                                                        className="p-1.5 hover:bg-green-50 rounded-full transition"
-                                                        title="Consulter les détails"
-                                                    >
-                                                        <EyeIcon className="w-4 h-4 text-gray-500 hover:text-green-500" />
-                                                    </button>
-                                                </td>
-                                                {showValidationColumn && canShowValidationActions && (
-                                                    <td className="py-3 px-4">
-                                                        {validationActions && validationActions(projet)}
-                                                    </td>
-                                                )}
-                                            </motion.tr>
-                                        ))}
-                                    </AnimatePresence>
+                                                <svg className="w-4 h-4 text-gray-500 hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => onViewDetails(projet)}
+                                            className="p-1 hover:bg-green-50 rounded-full transition"
+                                            title="Consulter"
+                                        >
+                                            <EyeIcon className="w-4 h-4 text-gray-500 hover:text-green-500" />
+                                        </button>
+                                    </div>
+                                </td>
+                                
+                                {/* Validation */}
+                                {showValidationColumn && canShowValidationActions && (
+                                    <td className="py-3 px-3 align-middle">
+                                        {validationActions && validationActions(projet)}
+                                    </td>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
+                            </motion.tr>
+                        );
+                    })}
+                </AnimatePresence>
+            )}
+        </tbody>
+    </table>
+</div>
                 </div>
             </div>
-
-            <style jsx>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-                .animate-pulse {
-                    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-                }
-                .line-clamp-2 {
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                }
-            `}</style>
         </div>
     );
 };

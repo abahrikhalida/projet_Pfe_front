@@ -1,6 +1,10 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ChefLayout } from './Layouts/ChefLayout';
 import { DirecteurRegionLayout } from './Layouts/DirecteurRegionLayout';
+import { DirecteurDirectionLayout } from './Layouts/DirecteurDirectionLayout';
+import { ResponsableDepartementLayout } from './Layouts/Responsabledepartement';
+
+
 import { ResponsableStructureLayout } from './Layouts/ResponsableStructureLayout';
 import { AgentLayout } from './Layouts/AgentLayout';
 import { DirecteurLayout } from './Layouts/DirecteurLayout';
@@ -24,6 +28,9 @@ import ProjetsDirecteur from "./Components/admin/Components/Projets/ProjetsDirec
 import ProjetsDivisionnaire from "./Components/admin/Components/Projets/ProjetsDivisionnaire"
 import ProjetsAdmin from './Components/admin/Components/Projets/Projetsadmin';
 import ProjetsResponsable from './Components/admin/Components/Projets/ProjetsResponsable';
+import AffectationResponsableDepartement from './Components/admin/Components/DirecteurdeDirection/AffectationResponsableDepartemen';
+import ProjetsResponsableDepartement from './Components/admin/Components/projet-direction/ProjetsResponsableDepartement';
+import ProjetsDirecteurDirection from './Components/admin/Components/projet-direction/ProjetsDirecteurDirection';
 
 
 
@@ -115,6 +122,28 @@ const router = createBrowserRouter([
 
     ]
   },
+    {
+    path: '/responsable-departement',
+    element: <ResponsableDepartementLayout />,
+    children: [
+      { index: true, element: <div>responsable_departement</div> },
+      { path: 'dashboard', element: <div>Dashboard Divisionnaire</div> },
+      { path: 'rapports', element: <div>Rapports</div> },
+      { path: 'statistiques', element: <div>Statistiques</div> },
+         {path: 'projets', element: <ProjetsResponsableDepartement />},
+
+    ]
+  },
+   {
+  path: '/directeur-direction',
+  element: <DirecteurDirectionLayout />,
+  children: [
+    { index: true, element: <div>directeur_direction</div> },
+    { path: 'dashboard', element: <div>Dashboard Directeur Direction</div> },
+    { path: 'affectation', element: <AffectationResponsableDepartement /> },  // ← Enlever le guillemet
+    { path: 'projets', element: <ProjetsDirecteurDirection /> },
+  ]
+},
   {
     path: '/agent',
     element: <AgentLayout />,

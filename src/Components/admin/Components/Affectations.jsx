@@ -1,4 +1,3 @@
-// Affectations.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { axiosInstance } from '../../../axios';
@@ -6,21 +5,18 @@ import { ReactComponent as SearchIcon } from '../../../Assets/Icons/Search.svg';
 import { ReactComponent as EditIcon } from '../../../Assets/Icons/edit.svg';
 
 const Affectations = () => {
-    const [activeSection, setActiveSection] = useState('directeurs');
-    const [directeurs, setDirecteurs] = useState([]);
-    const [responsables, setResponsables] = useState([]);
+    const [activeSection, setActiveSection] = useState('directeurs_region');
+    const [directeursRegion, setDirecteursRegion] = useState([]);
+    const [directeursDirection, setDirecteursDirection] = useState([]);
     const [regions, setRegions] = useState([]);
-    const [structures, setStructures] = useState([]);
-    const [structuresByRegion, setStructuresByRegion] = useState({});
+    const [directions, setDirections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [hoveredCard, setHoveredCard] = useState(null);
     const [showAffecterModal, setShowAffecterModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedRegion, setSelectedRegion] = useState('');
-    const [selectedStructure, setSelectedStructure] = useState('');
-    const [availableStructures, setAvailableStructures] = useState([]);
-    const [loadingStructures, setLoadingStructures] = useState(false);
+    const [selectedDirection, setSelectedDirection] = useState('');
     const [updating, setUpdating] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
@@ -31,61 +27,79 @@ const Affectations = () => {
     const ORANGE_GRADIENT = 'from-orange-500 to-amber-500';
 
     // Charger les données
-    const fetchData = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const [directeursRes, responsablesRes, regionsRes, structuresRes] = await Promise.all([
-                axiosInstance.get('/api/users/'),
-                axiosInstance.get('/api/users/responsables-structure/'),
-                axiosInstance.get('/params/regions'),
-                axiosInstance.get('/params/structures')
-            ]);
+    // const fetchData = async () => {
+    //     setLoading(true);
+    //     setError('');
+    //     try {
+    //         const [usersRes, regionsRes, directionsRes] = await Promise.all([
+    //             axiosInstance.get('/api/users/'),
+    //             axiosInstance.get('/params/regions'),
+    //             axiosInstance.get('/params/directions')
+    //         ]);
 
-            const allUsers = directeursRes.data.users || [];
-            const directeursFiltres = allUsers.filter(user => user.role === 'directeur_region');
+    //         const allUsers = usersRes.data.users || [];
             
-            setDirecteurs(directeursFiltres);
-            setResponsables(responsablesRes.data.users || []);
-            setRegions(regionsRes.data.data || []);
-            setStructures(structuresRes.data.data || []);
-        } catch (err) {
-            console.error("Erreur chargement données:", err);
-            setError("Impossible de charger les données");
-        } finally {
-            setLoading(false);
-        }
-    };
+    //         // Filtrer les directeurs de région (role: directeur_region)
+    //         const directeursRegionFiltres = allUsers.filter(user => user.role === 'directeur_region');
+            
+    //         // Filtrer les directeurs de direction (role: directeur_direction)
+    //         const directeursDirectionFiltres = allUsers.filter(user => user.role === 'directeur_direction');
+            
+    //         setDirecteursRegion(directeursRegionFiltres);
+    //         setDirecteursDirection(directeursDirectionFiltres);
+    //         setRegions(regionsRes.data.data || []);
+    //         setDirections(directionsRes.data.data || []);
+            
+    //     } catch (err) {
+    //         console.error("Erreur chargement données:", err);
+    //         setError("Impossible de charger les données");
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+    const fetchData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+        const [usersRes, regionsRes, directionsRes, directeursDirectionRes] = await Promise.all([
+            axiosInstance.get('/api/users/'),
+            axiosInstance.get('/params/regions'),
+            axiosInstance.get('/params/directions'),
+            axiosInstance.get('/api/users/directeurs-direction/affectes/')
+        ]);
 
-    // Charger les structures par région
-    const fetchStructuresByRegion = async (regionId) => {
-        if (!regionId) {
-            setAvailableStructures([]);
-            return;
-        }
+        const allUsers = usersRes.data.users || [];
+        const directeursAvecDirection = directeursDirectionRes.data.users || [];
         
-        setLoadingStructures(true);
-        try {
-            // Appel à l'API pour récupérer les structures d'une région
-            const response = await axiosInstance.get(`/params//structures/region/${regionId}`);
-            const structuresData = response.data.data || response.data || [];
-            setAvailableStructures(structuresData);
-        } catch (err) {
-            console.error("Erreur chargement structures par région:", err);
-            setAvailableStructures([]);
-        } finally {
-            setLoadingStructures(false);
-        }
-    };
-
-    // Quand la région change, recharger les structures
-    useEffect(() => {
-        if (showAffecterModal && activeSection === 'responsables' && selectedRegion) {
-            fetchStructuresByRegion(selectedRegion);
-        } else {
-            setAvailableStructures([]);
-        }
-    }, [selectedRegion, showAffecterModal, activeSection]);
+        // Filtrer les directeurs de région
+        const directeursRegionFiltres = allUsers.filter(user => user.role === 'directeur_region');
+        
+        // Créer un Map des directeurs avec direction_id
+        const directionMap = new Map();
+        directeursAvecDirection.forEach(d => {
+            directionMap.set(d.id, d.direction_id);
+        });
+        
+        // Filtrer les directeurs de direction et ajouter direction_id
+        const directeursDirectionFiltres = allUsers
+            .filter(user => user.role === 'directeur_direction')
+            .map(user => ({
+                ...user,
+                direction_id: directionMap.get(user.id) || user.direction_id || null
+            }));
+        
+        setDirecteursRegion(directeursRegionFiltres);
+        setDirecteursDirection(directeursDirectionFiltres);
+        setRegions(regionsRes.data.data || []);
+        setDirections(directionsRes.data.data || []);
+        
+    } catch (err) {
+        console.error("Erreur chargement données:", err);
+        setError("Impossible de charger les données");
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         fetchData();
@@ -98,6 +112,7 @@ const Affectations = () => {
         setTimeout(() => setShowSuccess(false), 3000);
     };
 
+    // Affectation d'une région à un directeur de région
     const handleAffecterRegion = async () => {
         if (!selectedUser || !selectedRegion) return;
         
@@ -111,7 +126,7 @@ const Affectations = () => {
                 setShowAffecterModal(false);
                 setSelectedUser(null);
                 setSelectedRegion('');
-                handleSuccess(`Région affectée à ${selectedUser.nom_complet}`);
+                handleSuccess(response.data.message || `Région affectée à ${selectedUser.nom_complet}`);
             }
         } catch (err) {
             console.error("Erreur affectation:", err);
@@ -122,71 +137,40 @@ const Affectations = () => {
         }
     };
 
-    // const handleAffecterStructure = async () => {
-    //     if (!selectedUser || !selectedStructure || !selectedRegion) return;
+    // Affectation d'une direction à un directeur de direction
+    const handleAffecterDirection = async () => {
+        if (!selectedUser || !selectedDirection) return;
         
-    //     setUpdating(true);
-    //     try {
-    //         // Utilisation de la nouvelle API d'affectation structure
-    //         const response = await axiosInstance.post(`/api/users/${selectedUser.id}/affecter-structure/`, {
-    //             region_id: selectedRegion,
-    //             structure_id: selectedStructure
-    //         });
+        setUpdating(true);
+        try {
+            const response = await axiosInstance.patch(`/api/users/${selectedUser.id}/affecter-direction/`, {
+                direction_id: selectedDirection
+            });
             
-    //         if (response.data.status === 'success') {
-    //             setShowAffecterModal(false);
-    //             setSelectedUser(null);
-    //             setSelectedRegion('');
-    //             setSelectedStructure('');
-    //             handleSuccess(response.data.message || `Structure affectée à ${selectedUser.nom_complet}`);
-    //         }
-    //     } catch (err) {
-    //         console.error("Erreur affectation:", err);
-    //         const errorMsg = err.response?.data?.error || "Erreur lors de l'affectation";
-    //         alert(errorMsg);
-    //     } finally {
-    //         setUpdating(false);
-    //     }
-    // };
-
-    // Affectations.jsx - Modifiez la fonction handleAffecterStructure
-
-const handleAffecterStructure = async () => {
-    if (!selectedUser || !selectedStructure || !selectedRegion) return;
-    
-    setUpdating(true);
-    try {
-        // Changement ici : utiliser POST au lieu de PATCH
-        const response = await axiosInstance.patch(`/api/users/${selectedUser.id}/affecter-structure/`, {
-            region_id: selectedRegion,
-            structure_id: selectedStructure
-        });
-        
-        if (response.data.status === 'success') {
-            setShowAffecterModal(false);
-            setSelectedUser(null);
-            setSelectedRegion('');
-            setSelectedStructure('');
-            handleSuccess(response.data.message || `Structure affectée à ${selectedUser.nom_complet}`);
+            if (response.data.status === 'success') {
+                setShowAffecterModal(false);
+                setSelectedUser(null);
+                setSelectedDirection('');
+                console.log(response.data)
+                handleSuccess(response.data.message || `Direction affectée à ${selectedUser.nom_complet}`);
+            }
+        } catch (err) {
+            console.error("Erreur affectation:", err);
+            const errorMsg = err.response?.data?.error || "Erreur lors de l'affectation";
+            alert(errorMsg);
+        } finally {
+            setUpdating(false);
         }
-    } catch (err) {
-        console.error("Erreur affectation:", err);
-        const errorMsg = err.response?.data?.error || "Erreur lors de l'affectation";
-        alert(errorMsg);
-    } finally {
-        setUpdating(false);
-    }
-};
-    const openAffecterModal = (user) => {
+    };
+
+    const openAffecterModal = (user, type) => {
         setSelectedUser(user);
-        setSelectedRegion(user.region_id || '');
-        setSelectedStructure(user.structure_id || '');
-        setShowAffecterModal(true);
-        
-        // Si c'est un responsable et qu'il a déjà une région, charger ses structures
-        if (user.role === 'responsable_structure' && user.region_id) {
-            fetchStructuresByRegion(user.region_id);
+        if (type === 'region') {
+            setSelectedRegion(user.region_id || '');
+        } else {
+            setSelectedDirection(user.direction_id || '');
         }
+        setShowAffecterModal(true);
     };
 
     const getRegionName = (regionId) => {
@@ -195,48 +179,51 @@ const handleAffecterStructure = async () => {
         return region?.nom_region || regionId;
     };
 
-    const getStructureName = (structureId) => {
-        if (!structureId) return 'Non affecté';
-        const structure = structures.find(s => s._id === structureId);
-        return structure?.nom_structure || structureId;
+    const getDirectionName = (directionId) => {
+        if (!directionId) return 'Non affecté';
+        const direction = directions.find(d => d._id === directionId);
+        return direction?.nom_direction || directionId;
     };
 
     const canAffecter = userRole === 'admin';
 
     // Filtrer les données
-    const filteredDirecteurs = directeurs.filter(d => 
+    const filteredDirecteursRegion = directeursRegion.filter(d => 
         d.nom_complet?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         d.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const filteredResponsables = responsables.filter(r => 
-        r.nom_complet?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredDirecteursDirection = directeursDirection.filter(d => 
+        d.nom_complet?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Cartes pour les onglets
     const cards = [
         {
-            id: 'directeurs',
-            title: 'Directeurs Région',
-            description: 'Affectation des régions aux directeurs',
-            count: directeurs.length,
+            id: 'directeurs_region',
+            title: 'Directeurs de Région',
+            description: 'Affectation des régions aux directeurs de région',
+            count: directeursRegion.length,
             icon: (
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    <path d="M3 12h3l2-3 2 3 2-3 2 3 2-3 2 3h3" strokeLinecap="round"/>
                 </svg>
             )
         },
         {
-            id: 'responsables',
-            title: 'Responsables Structure',
-            description: 'Affectation des structures aux responsables',
-            count: responsables.length,
+            id: 'directeurs_direction',
+            title: 'Directeurs de Direction',
+            description: 'Affectation des directions aux directeurs de direction',
+            count: directeursDirection.length,
             icon: (
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
                     <path d="M17 21v-4H7v4" />
                     <path d="M7 3v4h10V3" />
+                    <path d="M4 12h16" />
+                    <path d="M12 8v8" />
                 </svg>
             )
         }
@@ -340,7 +327,7 @@ const handleAffecterStructure = async () => {
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800">Affectations</h1>
                             <p className="text-gray-500 mt-1">
-                                Affectez les régions aux directeurs et les structures aux responsables
+                                Affectez les régions aux directeurs de région et les directions aux directeurs de direction
                             </p>
                         </div>
                         
@@ -373,7 +360,7 @@ const handleAffecterStructure = async () => {
                 <motion.div 
                     initial="hidden"
                     animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-10"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10"
                 >
                     {cards.map((card, index) => (
                         <motion.div
@@ -495,20 +482,22 @@ const handleAffecterStructure = async () => {
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-800">
-                                        {activeSection === 'directeurs' ? 'Liste des Directeurs' : 'Liste des Responsables'}
+                                        {activeSection === 'directeurs_region' 
+                                            ? 'Liste des Directeurs de Région' 
+                                            : 'Liste des Directeurs de Direction'}
                                     </h2>
                                     <p className="text-sm text-gray-500">
-                                        {activeSection === 'directeurs' 
-                                            ? 'Affectez une région à chaque directeur' 
-                                            : 'Affectez une structure à chaque responsable (sélectionnez d\'abord la région)'}
+                                        {activeSection === 'directeurs_region' 
+                                            ? 'Affectez une région à chaque directeur de région' 
+                                            : 'Affectez une direction à chaque directeur de direction'}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-6">
-                            {/* Tableau Directeurs */}
-                            {activeSection === 'directeurs' && (
+                            {/* Tableau Directeurs de Région */}
+                            {activeSection === 'directeurs_region' && (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
@@ -517,8 +506,7 @@ const handleAffecterStructure = async () => {
                                                 <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] w-[30%]">Email</th>
                                                 <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] w-[20%]">Région affectée</th>
                                                 <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] rounded-r-lg w-[15%]">Actions</th>
-                                                </tr>
-                                             
+                                             </tr>
                                         </thead>
                                         <tbody>
                                             {loading ? (
@@ -530,20 +518,20 @@ const handleAffecterStructure = async () => {
                                                         <p className="text-xs text-gray-400 mt-2">Chargement...</p>
                                                     </td>
                                                 </tr>
-                                            ) : filteredDirecteurs.length === 0 ? (
+                                            ) : filteredDirecteursRegion.length === 0 ? (
                                                 <tr>
                                                     <td colSpan="4" className="py-12 text-center">
                                                         <div className="text-center">
                                                             <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                                             </svg>
-                                                            <p className="text-gray-500">Aucun directeur trouvé</p>
+                                                            <p className="text-gray-500">Aucun directeur de région trouvé</p>
                                                         </div>
                                                     </td>
                                                 </tr>
                                             ) : (
                                                 <AnimatePresence>
-                                                    {filteredDirecteurs.map((directeur, index) => (
+                                                    {filteredDirecteursRegion.map((directeur, index) => (
                                                         <motion.tr 
                                                             key={directeur.id}
                                                             custom={index}
@@ -585,7 +573,7 @@ const handleAffecterStructure = async () => {
                                                                     <motion.button
                                                                         whileHover={{ scale: 1.02 }}
                                                                         whileTap={{ scale: 0.98 }}
-                                                                        onClick={() => openAffecterModal(directeur)}
+                                                                        onClick={() => openAffecterModal(directeur, 'region')}
                                                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
                                                                             directeur.region_id 
                                                                                 ? 'bg-[#FF8500]/10 text-[#FF8500] hover:bg-[#FF8500] hover:text-white' 
@@ -606,47 +594,46 @@ const handleAffecterStructure = async () => {
                                 </div>
                             )}
 
-                            {/* Tableau Responsables */}
-                            {activeSection === 'responsables' && (
+                            {/* Tableau Directeurs de Direction */}
+                            {activeSection === 'directeurs_direction' && (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
                                             <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
-                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] rounded-l-lg w-[30%]">Utilisateur</th>
-                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] w-[25%]">Email</th>
-                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] w-[15%]">Région</th>
-                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] w-[20%]">Structure affectée</th>
-                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] rounded-r-lg w-[10%]">Actions</th>
-                                              </tr>
+                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] rounded-l-lg w-[35%]">Utilisateur</th>
+                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] w-[30%]">Email</th>
+                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] w-[20%]">Direction affectée</th>
+                                                <th className="py-3 px-4 text-left text-xs font-semibold text-[#4A4A4A] rounded-r-lg w-[15%]">Actions</th>
+                                             </tr>
                                         </thead>
                                         <tbody>
                                             {loading ? (
                                                 <tr>
-                                                    <td colSpan="5" className="py-12 text-center">
+                                                    <td colSpan="4" className="py-12 text-center">
                                                         <div className="flex justify-center">
                                                             <div className="w-8 h-8 border-3 border-[#FF8500] border-t-transparent rounded-full animate-spin"></div>
                                                         </div>
                                                         <p className="text-xs text-gray-400 mt-2">Chargement...</p>
                                                     </td>
                                                 </tr>
-                                            ) : filteredResponsables.length === 0 ? (
+                                            ) : filteredDirecteursDirection.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="5" className="py-12 text-center">
+                                                    <td colSpan="4" className="py-12 text-center">
                                                         <div className="text-center">
                                                             <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
                                                                 <path d="M17 21v-4H7v4" />
                                                                 <path d="M7 3v4h10V3" />
                                                             </svg>
-                                                            <p className="text-gray-500">Aucun responsable trouvé</p>
+                                                            <p className="text-gray-500">Aucun directeur de direction trouvé</p>
                                                         </div>
                                                     </td>
                                                 </tr>
                                             ) : (
                                                 <AnimatePresence>
-                                                    {filteredResponsables.map((responsable, index) => (
+                                                    {filteredDirecteursDirection.map((directeur, index) => (
                                                         <motion.tr 
-                                                            key={responsable.id}
+                                                            key={directeur.id}
                                                             custom={index}
                                                             variants={tableRowVariants}
                                                             initial="hidden"
@@ -656,34 +643,29 @@ const handleAffecterStructure = async () => {
                                                         >
                                                             <td className="py-3 px-4">
                                                                 <div className="flex items-center gap-3">
-                                                                    {responsable.photo_profil ? (
-                                                                        <img src={responsable.photo_profil} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                                                    {directeur.photo_profil ? (
+                                                                        <img src={directeur.photo_profil} alt="" className="w-8 h-8 rounded-full object-cover" />
                                                                     ) : (
                                                                         <div className="w-8 h-8 rounded-full bg-[#FF8500]/10 flex items-center justify-center text-[#FF8500] font-medium text-sm">
-                                                                            {responsable.nom_complet?.charAt(0)}
+                                                                            {directeur.nom_complet?.charAt(0)}
                                                                         </div>
                                                                     )}
                                                                     <div>
-                                                                        <div className="font-medium text-gray-800 text-sm">{responsable.nom_complet}</div>
-                                                                        <div className="text-xs text-gray-400">ID: {responsable.id}</div>
+                                                                        <div className="font-medium text-gray-800 text-sm">{directeur.nom_complet}</div>
+                                                                        <div className="text-xs text-gray-400">ID: {directeur.id}</div>
                                                                     </div>
                                                                 </div>
                                                             </td>
                                                             <td className="py-3 px-4">
-                                                                <div className="text-sm text-gray-600">{responsable.email}</div>
-                                                            </td>
-                                                            <td className="py-3 px-4">
-                                                                <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                                                    {getRegionName(responsable.region_id)}
-                                                                </span>
+                                                                <div className="text-sm text-gray-600">{directeur.email}</div>
                                                             </td>
                                                             <td className="py-3 px-4">
                                                                 <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                                                                    responsable.structure_id 
+                                                                    directeur.direction_id 
                                                                         ? 'bg-green-100 text-green-700' 
                                                                         : 'bg-gray-100 text-gray-500'
                                                                 }`}>
-                                                                    {getStructureName(responsable.structure_id)}
+                                                                    {getDirectionName(directeur.direction_id)}
                                                                 </span>
                                                             </td>
                                                             <td className="py-3 px-4">
@@ -691,15 +673,15 @@ const handleAffecterStructure = async () => {
                                                                     <motion.button
                                                                         whileHover={{ scale: 1.02 }}
                                                                         whileTap={{ scale: 0.98 }}
-                                                                        onClick={() => openAffecterModal(responsable)}
+                                                                        onClick={() => openAffecterModal(directeur, 'direction')}
                                                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
-                                                                            responsable.structure_id 
+                                                                            directeur.direction_id 
                                                                                 ? 'bg-[#FF8500]/10 text-[#FF8500] hover:bg-[#FF8500] hover:text-white' 
                                                                                 : 'bg-[#FF8500] text-white hover:bg-[#e67800]'
                                                                         }`}
                                                                     >
                                                                         <EditIcon className="w-3 h-3" />
-                                                                        {responsable.structure_id ? 'Modifier' : 'Affecter'}
+                                                                        {directeur.direction_id ? 'Modifier' : 'Affecter'}
                                                                     </motion.button>
                                                                 )}
                                                             </td>
@@ -717,349 +699,156 @@ const handleAffecterStructure = async () => {
             </div>
 
             {/* Modal Affectation */}
-            {/* <AnimatePresence>
+            <AnimatePresence>
                 {showAffecterModal && selectedUser && (
                     <motion.div 
                         variants={modalVariants}
                         initial="hidden"
                         animate="visible"
                         exit="exit"
-                        className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50"
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
                     >
-                        <div className="bg-white rounded-2xl shadow-2xl w-[450px] max-w-[90%] overflow-hidden">
-                            <div className="bg-gradient-to-r from-[#FF8500] to-[#FFA500] px-5 py-4">
+                        <div className="w-[550px] bg-white shadow-lg p-6 rounded-2xl">
+                            
+                            {/* En-tête */}
+                            <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                                <h1 className="text-lg font-semibold text-gray-800">
+                                    {activeSection === 'directeurs_region' ? 'Affecter une région' : 'Affecter une direction'}
+                                </h1>
+                                <button 
+                                    onClick={() => {
+                                        setShowAffecterModal(false);
+                                        setSelectedUser(null);
+                                        setSelectedRegion('');
+                                        setSelectedDirection('');
+                                    }} 
+                                    className="p-1 hover:bg-gray-100 rounded-full transition"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <path d="M18 6L6 18M6 6L18 18" stroke="#4F4F4F" strokeWidth="2" strokeLinecap="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Informations utilisateur */}
+                            <div className="mt-4 p-3 bg-orange-50 rounded-xl border border-orange-200">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                        <EditIcon className="w-5 h-5 text-white" />
-                                    </div>
+                                    {selectedUser.photo_profil ? (
+                                        <img src={selectedUser.photo_profil} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-[#FF8500]/20 flex items-center justify-center text-[#FF8500] font-medium">
+                                            {selectedUser.nom_complet?.charAt(0)}
+                                        </div>
+                                    )}
                                     <div>
-                                        <h3 className="text-white font-bold text-base">
-                                            {activeSection === 'directeurs' ? 'Affecter une région' : 'Affecter une structure'}
-                                        </h3>
-                                        <p className="text-white/80 text-xs">Pour: {selectedUser.nom_complet}</p>
+                                        <p className="text-sm font-semibold text-gray-800">{selectedUser.nom_complet}</p>
+                                        <p className="text-xs text-gray-500">{selectedUser.email}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-5">
-                                {activeSection === 'directeurs' ? (
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Sélectionner une région</label>
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                activeSection === 'directeurs_region' ? handleAffecterRegion() : handleAffecterDirection();
+                            }} className="space-y-4 mt-4">
+                                
+                                {activeSection === 'directeurs_region' ? (
+                                    // Formulaire pour Directeurs de Région
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
+                                            Région à affecter <span className="text-red-500">*</span>
+                                        </label>
                                         <select
                                             value={selectedRegion}
                                             onChange={(e) => setSelectedRegion(e.target.value)}
-                                            className="w-full h-10 px-3 rounded-xl border border-gray-300 focus:border-[#FF8500] focus:outline-none focus:ring-1 focus:ring-[#FF8500] transition-all"
+                                            required
+                                            className="w-full h-10 px-3 rounded-xl border border-gray-300 focus:border-[#FF8500] focus:ring-1 focus:ring-[#FF8500] outline-none bg-white text-left"
                                         >
-                                            <option value="">-- Choisir une région --</option>
+                                            <option value="">-- Sélectionner une région --</option>
                                             {regions.map(region => (
                                                 <option key={region._id || region.code_region} value={region._id || region.code_region}>
                                                     {region.nom_region} ({region.code_region})
                                                 </option>
                                             ))}
                                         </select>
+                                        
+                                        {selectedUser.region_id && (
+                                            <div className="mt-2 p-2 bg-yellow-50 rounded-xl">
+                                                <p className="text-xs text-yellow-700 flex items-center gap-1">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    Attention: Ce directeur a déjà une région. La modifier remplacera l'ancienne.
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
-                                    <>
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Sélectionner la région <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                value={selectedRegion}
-                                                onChange={(e) => {
-                                                    setSelectedRegion(e.target.value);
-                                                    setSelectedStructure('');
-                                                }}
-                                                className="w-full h-10 px-3 rounded-xl border border-gray-300 focus:border-[#FF8500] focus:outline-none focus:ring-1 focus:ring-[#FF8500] transition-all"
-                                            >
-                                                <option value="">-- Choisir une région --</option>
-                                                {regions.map(region => (
-                                                    <option key={region._id || region.code_region} value={region._id || region.code_region}>
-                                                        {region.nom_region} ({region.code_region})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Sélectionner la structure <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                value={selectedStructure}
-                                                onChange={(e) => setSelectedStructure(e.target.value)}
-                                                disabled={!selectedRegion || loadingStructures}
-                                                className="w-full h-10 px-3 rounded-xl border border-gray-300 focus:border-[#FF8500] focus:outline-none focus:ring-1 focus:ring-[#FF8500] transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="">
-                                                    {loadingStructures 
-                                                        ? 'Chargement des structures...' 
-                                                        : !selectedRegion 
-                                                            ? '-- D\'abord choisir une région --' 
-                                                            : '-- Choisir une structure --'
-                                                    }
+                                    // Formulaire pour Directeurs de Direction
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
+                                            Direction à affecter <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            value={selectedDirection}
+                                            onChange={(e) => setSelectedDirection(e.target.value)}
+                                            required
+                                            className="w-full h-10 px-3 rounded-xl border border-gray-300 focus:border-[#FF8500] focus:ring-1 focus:ring-[#FF8500] outline-none bg-white text-left"
+                                        >
+                                            <option value="">-- Sélectionner une direction --</option>
+                                            {directions.map(direction => (
+                                                <option key={direction._id} value={direction._id}>
+                                                    {direction.nom_direction} ({direction.code_direction})
                                                 </option>
-                                                {availableStructures.map(structure => (
-                                                    <option key={structure._id} value={structure._id}>
-                                                        {structure.nom_structure} ({structure.code_structure})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            {selectedRegion && availableStructures.length === 0 && !loadingStructures && (
-                                                <p className="text-xs text-amber-600 mt-1">
-                                                    Aucune structure disponible dans cette région
+                                            ))}
+                                        </select>
+                                        
+                                        {selectedUser.direction_id && (
+                                            <div className="mt-2 p-2 bg-yellow-50 rounded-xl">
+                                                <p className="text-xs text-yellow-700 flex items-center gap-1">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    Attention: Ce directeur a déjà une direction. La modifier remplacera l'ancienne.
                                                 </p>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                                
-                                {activeSection === 'directeurs' && selectedUser.region_id && (
-                                    <div className="mt-2 p-2 bg-yellow-50 rounded-lg">
-                                        <p className="text-xs text-yellow-700">
-                                            ⚠️ Attention: Ce directeur a déjà une région. La modifier remplacera l'ancienne.
-                                        </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-                                
-                                {activeSection === 'responsables' && selectedUser.structure_id && (
-                                    <div className="mt-2 p-2 bg-yellow-50 rounded-lg">
-                                        <p className="text-xs text-yellow-700">
-                                            ⚠️ Attention: Ce responsable a déjà une structure. La modifier remplacera l'ancienne.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
 
-                            <div className="border-t border-gray-100 px-5 py-4 bg-gray-50 flex gap-3">
-                                <button
-                                    onClick={() => {
-                                        setShowAffecterModal(false);
-                                        setSelectedUser(null);
-                                        setSelectedRegion('');
-                                        setSelectedStructure('');
-                                    }}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm text-gray-700 font-medium hover:bg-gray-100 transition-all"
-                                >
-                                    Annuler
-                                </button>
-                                <button
-                                    onClick={activeSection === 'directeurs' ? handleAffecterRegion : handleAffecterStructure}
-                                    disabled={
-                                        updating || 
-                                        (activeSection === 'directeurs' ? !selectedRegion : (!selectedRegion || !selectedStructure))
-                                    }
-                                    className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                                        updating || (activeSection === 'directeurs' ? !selectedRegion : (!selectedRegion || !selectedStructure))
-                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-[#FF8500] to-[#FFA500] text-white hover:shadow-lg'
-                                    }`}
-                                >
-                                    {updating && (
-                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                        </svg>
-                                    )}
-                                    {updating ? 'Affectation...' : 'Affecter'}
-                                </button>
-                            </div>
+                                {/* Boutons d'action */}
+                                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowAffecterModal(false);
+                                            setSelectedUser(null);
+                                            setSelectedRegion('');
+                                            setSelectedDirection('');
+                                        }}
+                                        className="px-5 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-300 transition"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={updating || (activeSection === 'directeurs_region' ? !selectedRegion : !selectedDirection)}
+                                        className="px-5 py-2 bg-[#FF8500] text-white text-sm font-medium rounded-xl hover:bg-[#e67800] transition disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {updating && (
+                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                            </svg>
+                                        )}
+                                        {updating ? 'Affectation...' : 'Affecter'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence> */}
-            {/* Modal Affectation - Style AjouterStructure */}
-<AnimatePresence>
-    {showAffecterModal && selectedUser && (
-        <motion.div 
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        >
-            <div className="w-[550px] bg-white shadow-lg p-6 font-poppins">
-                
-                {/* En-tête */}
-                <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                    <h1 className="text-lg font-semibold text-gray-800">
-                        {activeSection === 'directeurs' ? 'Affecter une région' : 'Affecter une structure'}
-                    </h1>
-                    <button 
-                        onClick={() => {
-                            setShowAffecterModal(false);
-                            setSelectedUser(null);
-                            setSelectedRegion('');
-                            setSelectedStructure('');
-                        }} 
-                        className="p-1 hover:bg-gray-100 rounded-full transition"
-                    >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="#4F4F4F" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                    </button>
-                </div>
-
-                {/* Informations utilisateur */}
-                <div className="mt-4 p-3 bg-orange-50 rounded-[20px] border border-orange-200">
-                    <div className="flex items-center gap-3">
-                        {selectedUser.photo_profil ? (
-                            <img src={selectedUser.photo_profil} alt="" className="w-10 h-10 rounded-full object-cover" />
-                        ) : (
-                            <div className="w-10 h-10 rounded-full bg-[#FF8500]/20 flex items-center justify-center text-[#FF8500] font-medium">
-                                {selectedUser.nom_complet?.charAt(0)}
-                            </div>
-                        )}
-                        <div>
-                            <p className="text-sm font-semibold text-gray-800">{selectedUser.nom_complet}</p>
-                            <p className="text-xs text-gray-500">{selectedUser.email}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    activeSection === 'directeurs' ? handleAffecterRegion() : handleAffecterStructure();
-                }} className="space-y-4 mt-4">
-                    
-                    {activeSection === 'directeurs' ? (
-                        // Formulaire pour Directeurs
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Région à affecter <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                value={selectedRegion}
-                                onChange={(e) => setSelectedRegion(e.target.value)}
-                                required
-                                className="w-full h-10 px-3 rounded-[20px] border border-gray-300 focus:border-[#FF8500] focus:ring-1 focus:ring-[#FF8500] outline-none bg-white text-left"
-                            >
-                                <option value="">-- Sélectionner une région --</option>
-                                {regions.map(region => (
-                                    <option key={region._id || region.code_region} value={region._id || region.code_region}>
-                                        {region.nom_region} ({region.code_region})
-                                    </option>
-                                ))}
-                            </select>
-                            
-                            {selectedUser.region_id && (
-                                <div className="mt-2 p-2 bg-yellow-50 rounded-[20px]">
-                                    <p className="text-xs text-yellow-700 flex items-center gap-1">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                        Attention: Ce directeur a déjà une région. La modifier remplacera l'ancienne.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        // Formulaire pour Responsables
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                    Région <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={selectedRegion}
-                                    onChange={(e) => {
-                                        setSelectedRegion(e.target.value);
-                                        setSelectedStructure('');
-                                    }}
-                                    required
-                                    className="w-full h-10 px-3 rounded-[20px] border border-gray-300 focus:border-[#FF8500] focus:ring-1 focus:ring-[#FF8500] outline-none bg-white text-left"
-                                >
-                                    <option value="">-- Sélectionner une région --</option>
-                                    {regions.map(region => (
-                                        <option key={region._id || region.code_region} value={region._id || region.code_region}>
-                                            {region.nom_region} ({region.code_region})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                    Structure <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={selectedStructure}
-                                    onChange={(e) => setSelectedStructure(e.target.value)}
-                                    disabled={!selectedRegion || loadingStructures}
-                                    required
-                                    className="w-full h-10 px-3 rounded-[20px] border border-gray-300 focus:border-[#FF8500] focus:ring-1 focus:ring-[#FF8500] outline-none bg-white text-left disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                >
-                                    <option value="">
-                                        {loadingStructures 
-                                            ? 'Chargement des structures...' 
-                                            : !selectedRegion 
-                                                ? '-- D\'abord choisir une région --' 
-                                                : '-- Sélectionner une structure --'
-                                        }
-                                    </option>
-                                    {availableStructures.map(structure => (
-                                        <option key={structure._id} value={structure._id}>
-                                            {structure.nom_structure} ({structure.code_structure})
-                                        </option>
-                                    ))}
-                                </select>
-                                
-                                {selectedRegion && availableStructures.length === 0 && !loadingStructures && (
-                                    <p className="text-xs text-amber-600 mt-1">
-                                        ⚠️ Aucune structure disponible dans cette région
-                                    </p>
-                                )}
-                            </div>
-                            
-                            {selectedUser.structure_id && (
-                                <div className="p-2 bg-yellow-50 rounded-[20px]">
-                                    <p className="text-xs text-yellow-700 flex items-center gap-1">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                        Attention: Ce responsable a déjà une structure. La modifier remplacera l'ancienne.
-                                    </p>
-                                </div>
-                            )}
-                        </>
-                    )}
-
-                    {/* Boutons d'action */}
-                    <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setShowAffecterModal(false);
-                                setSelectedUser(null);
-                                setSelectedRegion('');
-                                setSelectedStructure('');
-                            }}
-                            className="px-5 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-[20px] hover:bg-gray-300 transition"
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={
-                                updating || 
-                                (activeSection === 'directeurs' ? !selectedRegion : (!selectedRegion || !selectedStructure))
-                            }
-                            className="px-5 py-2 bg-[#FF8500] text-white text-sm font-medium rounded-[20px] hover:bg-[#e67800] transition disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {updating && (
-                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                </svg>
-                            )}
-                            {updating ? 'Affectation...' : 'Affecter'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </motion.div>
-    )}
-</AnimatePresence>
+            </AnimatePresence>
 
             {/* Message succès */}
             <AnimatePresence>
@@ -1070,21 +859,10 @@ const handleAffecterStructure = async () => {
                         exit={{ opacity: 0, y: 20 }}
                         className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl z-50 text-sm"
                     >
-                        {successMessage}
+                        ✅ {successMessage}
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <style jsx>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-                
-                .animate-pulse {
-                    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-                }
-            `}</style>
         </div>
     );
 };

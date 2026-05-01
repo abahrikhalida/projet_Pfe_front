@@ -1,195 +1,162 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { axiosInstance } from '../../axios';
-import { ReactComponent as SearchIcon } from '../../Assets/Icons/Search.svg';
-import { ReactComponent as AddIcon } from '../../Assets/Icons/Arrow.svg';
-import { ReactComponent as DeleteIcon } from '../../Assets/Icons/Delete.svg';
-import { ReactComponent as EmptyIcon } from '../../Assets/Icons/notFound.svg';
+import { axiosInstance } from '../../../../axios';
+import { ReactComponent as SearchIcon } from '../../../../Assets/Icons/Search.svg';
+import { ReactComponent as AddIcon } from '../../../../Assets/Icons/Arrow.svg';
+import { ReactComponent as EditIcon } from '../../../../Assets/Icons/edit.svg';
+import { ReactComponent as DeleteIcon } from '../../../../Assets/Icons/Delete.svg';
+import { ReactComponent as EmptyIcon } from '../../../../Assets/Icons/notFound.svg';
 
-const AffectationResponsable = () => {
-    const [structures, setStructures] = useState([]);
+const AffectationResponsableDepartement = () => {
+    const [departements, setDepartements] = useState([]);
     const [responsablesDisponibles, setResponsablesDisponibles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedStructure, setSelectedStructure] = useState(null);
+    const [selectedDepartement, setSelectedDepartement] = useState(null);
     const [selectedResponsable, setSelectedResponsable] = useState(null);
     const [showAffectationModal, setShowAffectationModal] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [error, setError] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const [debugInfo, setDebugInfo] = useState(null);
+    const [filterStatus, setFilterStatus] = useState('all'); // all, affected, not_affected
 
-    const getRegionId = () => {
-        return localStorage.getItem('region_id') || localStorage.getItem('regionId');
+    // Récupérer l'ID de la direction depuis localStorage
+    const getDirectionId = () => {
+        return localStorage.getItem('direction_id') || localStorage.getItem('directionId');
     };
 
-    // Fonction utilitaire pour extraire les données de la réponse API
-    const extractDataFromResponse = (response, dataKey = null) => {
-        console.log('📦 Raw response:', response);
-        
-        // Si response.data existe
-        if (response.data) {
-            // Si response.data.data est un tableau
-            if (response.data.data && Array.isArray(response.data.data)) {
-                return response.data.data;
-            }
-            // Si response.data.structures est un tableau
-            if (response.data.structures && Array.isArray(response.data.structures)) {
-                return response.data.structures;
-            }
-            // Si response.data.results est un tableau
-            if (response.data.results && Array.isArray(response.data.results)) {
-                return response.data.results;
-            }
-            // Si response.data est directement un tableau
-            if (Array.isArray(response.data)) {
-                return response.data;
-            }
-            // Si response.data a une clé spécifique
-            if (dataKey && response.data[dataKey] && Array.isArray(response.data[dataKey])) {
-                return response.data[dataKey];
-            }
-        }
-        
-        // Si response est directement un tableau
-        if (Array.isArray(response)) {
-            return response;
-        }
-        
-        return [];
-    };
-
-    const fetchStructures = useCallback(async () => {
+    // Récupérer les départements de la direction du directeur connecté
+    const fetchDepartements = useCallback(async () => {
         try {
             setLoading(true);
-            const regionId = getRegionId();
+            const directionId = getDirectionId();
             
-            console.log('🏢 Region ID:', regionId);
-            
-            if (!regionId) {
-                setError("Aucune région associée à votre compte");
-                setLoading(false);
+            if (!directionId) {
+                setError("Aucune direction associée à votre compte");
                 return;
             }
 
-            const url = `/params/structures/region/${regionId}`;
-            console.log('📡 Fetching structures from:', url);
+            // Appel à l'API pour récupérer les départements par direction
+            const response = await axiosInstance.get(`/params/departements/by-direction-id/${directionId}`);
             
-            const response = await axiosInstance.get(url);
-            console.log('✅ Structures response:', response.data);
-            
-            // Extraire les structures de la réponse
-            let structuresData = extractDataFromResponse(response);
-            
-            // Log pour déboguer
-            console.log('📋 Extracted structures data:', structuresData);
-            console.log('📊 Number of structures:', structuresData.length);
-            
-            if (structuresData.length === 0) {
-                console.warn('⚠️ Aucune structure trouvée pour cette région');
-                setStructures([]);
-                setLoading(false);
-                return;
+            let departementsData = [];
+            if (response.data.data && Array.isArray(response.data.data)) {
+                departementsData = response.data.data;
+            } else if (response.data.departements && Array.isArray(response.data.departements)) {
+                departementsData = response.data.departements;
+            } else if (Array.isArray(response.data)) {
+                departementsData = response.data;
             }
 
-            // Récupérer les responsables affectés
-            const affectesUrl = '/api/users/responsables-structure/affectes/';
-            console.log('📡 Fetching affected responsables from:', affectesUrl);
+            // Pour chaque département, récupérer les infos du responsable affecté
+            const departementsWithResponsable = await Promise.all(
+                departementsData.map(async (departement) => {
+                    try {
+                        // Récupérer tous les responsables affectés
+                        const respResponse = await axiosInstance.get('/api/users/responsables-departement/affectes/');
+                        let responsablesAffectes = [];
+                        
+                        if (respResponse.data.users && Array.isArray(respResponse.data.users)) {
+                            responsablesAffectes = respResponse.data.users;
+                        } else if (Array.isArray(respResponse.data)) {
+                            responsablesAffectes = respResponse.data;
+                        }
+
+                        const responsable = responsablesAffectes.find(r => {
+                            const departementId = r.departement_id || r.departementId;
+                            const currentDepartementId = departement._id || departement.id;
+                            return departementId === currentDepartementId;
+                        });
+                        
+                        return {
+                            ...departement,
+                            responsable_id: responsable?.id || null,
+                            responsable_nom: responsable?.nom_complet || responsable?.full_name || null,
+                            responsable_email: responsable?.email || null
+                        };
+                    } catch (err) {
+                        console.error(`Erreur pour département ${departement._id || departement.id}:`, err);
+                        return {
+                            ...departement,
+                            responsable_id: null,
+                            responsable_nom: null,
+                            responsable_email: null
+                        };
+                    }
+                })
+            );
             
-            const affectesResponse = await axiosInstance.get(affectesUrl);
-            console.log('✅ Affected responsables response:', affectesResponse.data);
-            
-            let responsablesAffectes = extractDataFromResponse(affectesResponse, 'users');
-            console.log('📋 Extracted affected responsables:', responsablesAffectes);
-            
-            // Mapper les structures avec leurs responsables
-            const structuresWithResponsable = structuresData.map(structure => {
-                const structureId = structure._id || structure.id;
-                console.log(`🔍 Looking for responsable for structure ID: ${structureId}`);
-                
-                const responsable = responsablesAffectes.find(r => {
-                    const respStructureId = r.structure_id || r.structureId;
-                    return respStructureId === structureId;
-                });
-                
-                if (responsable) {
-                    console.log(`✅ Found responsable for structure ${structure.nom_structure}:`, responsable.nom_complet);
-                } else {
-                    console.log(`❌ No responsable found for structure ${structure.nom_structure}`);
-                }
-                
-                return {
-                    ...structure,
-                    responsable_id: responsable?.id || null,
-                    responsable_nom: responsable?.nom_complet || responsable?.full_name || null,
-                    responsable_email: responsable?.email || null,
-                };
-            });
-            
-            console.log('🎯 Final structures with responsables:', structuresWithResponsable);
-            setStructures(structuresWithResponsable);
-            setDebugInfo({
-                totalFromApi: structuresData.length,
-                mappedCount: structuresWithResponsable.length,
-                sampleStructure: structuresData[0]
-            });
-            
+            setDepartements(departementsWithResponsable);
         } catch (err) {
-            console.error("❌ Erreur chargement structures:", err);
-            console.error("Response error:", err.response?.data);
-            setError(`Impossible de charger les structures: ${err.response?.data?.message || err.message}`);
+            console.error("Erreur chargement départements:", err);
+            setError("Impossible de charger les départements de votre direction");
         } finally {
             setLoading(false);
         }
     }, []);
 
+    // Récupérer les responsables disponibles (non affectés) de la direction
     const fetchResponsables = useCallback(async () => {
         try {
-            const regionId = getRegionId();
+            const directionId = getDirectionId();
+            console.log("🏢 Direction du directeur:", directionId);
             
-            if (!regionId) {
+            if (!directionId) {
+                setError("Aucune direction associée à votre compte");
                 return;
             }
 
-            const url = `/api/users/responsables-structure/region/${regionId}`;
-            console.log('📡 Fetching responsables from:', url);
+            // Appel à l'API pour récupérer les responsables par direction
+            const response = await axiosInstance.get(`/api/users/responsables-departement/direction/${directionId}`);
             
-            const response = await axiosInstance.get(url);
-            console.log('✅ Responsables response:', response.data);
-            
-            let allResponsables = extractDataFromResponse(response, 'users');
-            console.log('📋 All responsables in region:', allResponsables);
-            
+            let allResponsables = [];
+            if (response.data.users && Array.isArray(response.data.users)) {
+                allResponsables = response.data.users;
+            } else if (Array.isArray(response.data)) {
+                allResponsables = response.data;
+            } else if (response.data.data && Array.isArray(response.data.data)) {
+                allResponsables = response.data.data;
+            }
+
+            console.log(`📋 Total responsables dans la direction ${directionId}:`, allResponsables.length);
+
             // Récupérer les responsables déjà affectés
-            const affectesUrl = '/api/users/responsables-structure/affectes/';
-            const affectesResponse = await axiosInstance.get(affectesUrl);
-            let responsablesAffectes = extractDataFromResponse(affectesResponse, 'users');
+            const affectesRes = await axiosInstance.get('/api/users/responsables-departement/affectes/');
+            let responsablesAffectes = [];
             
+            if (affectesRes.data.users && Array.isArray(affectesRes.data.users)) {
+                responsablesAffectes = affectesRes.data.users;
+            } else if (Array.isArray(affectesRes.data)) {
+                responsablesAffectes = affectesRes.data;
+            }
+
             const affectesIds = new Set(responsablesAffectes.map(r => r.id));
+            
+            // Filtrer les responsables non affectés
             const disponibles = allResponsables.filter(resp => !affectesIds.has(resp.id));
             
-            console.log(`📊 Available responsables: ${disponibles.length} / ${allResponsables.length}`);
+            console.log(`✅ Responsables disponibles dans votre direction: ${disponibles.length}`);
             
             setResponsablesDisponibles(disponibles);
             
             if (disponibles.length === 0 && allResponsables.length > 0) {
-                setError("Tous les responsables de votre région sont déjà affectés");
+                setError("Tous les responsables de votre direction sont déjà affectés");
             } else if (allResponsables.length === 0) {
-                setError("Aucun responsable trouvé dans votre région. Créez d'abord des responsables.");
+                setError("Aucun responsable trouvé dans votre direction. Créez d'abord des responsables.");
             } else {
                 setError('');
             }
             
         } catch (err) {
-            console.error("❌ Erreur chargement responsables:", err);
-            setError("Impossible de charger les responsables de votre région");
+            console.error("Erreur chargement responsables:", err);
+            setError("Impossible de charger les responsables de votre direction");
         }
     }, []);
 
+    // Affecter un responsable à un département
     const handleAffecter = async () => {
-        if (!selectedStructure || !selectedResponsable) {
-            setError("Veuillez sélectionner une structure et un responsable");
+        if (!selectedDepartement || !selectedResponsable) {
+            setError("Veuillez sélectionner un département et un responsable");
             return;
         }
 
@@ -197,34 +164,34 @@ const AffectationResponsable = () => {
         setError('');
 
         try {
-            const structureId = selectedStructure._id || selectedStructure.id;
+            const departementId = selectedDepartement._id || selectedDepartement.id;
             
-            console.log(`🔗 Affectation: responsable ${selectedResponsable.id} -> structure ${structureId}`);
-            
-            await axiosInstance.patch(`/api/users/${selectedResponsable.id}/affecter-structure/`, {
-                structure_id: structureId
+            await axiosInstance.patch(`/api/users/${selectedResponsable.id}/affecter-departement/`, {
+                departement_id: departementId
             });
 
-            setSuccessMessage(`✓ Responsable ${selectedResponsable.nom_complet || selectedResponsable.full_name} affecté à ${selectedStructure.nom_structure || selectedStructure.name}`);
+            setSuccessMessage(`✓ Responsable ${selectedResponsable.nom_complet || selectedResponsable.full_name} affecté à ${selectedDepartement.nom_departement || selectedDepartement.name}`);
             setShowSuccess(true);
             setShowAffectationModal(false);
-            setSelectedStructure(null);
+            setSelectedDepartement(null);
             setSelectedResponsable(null);
             
-            await fetchStructures();
+            // Rafraîchir les données
+            await fetchDepartements();
             await fetchResponsables();
             
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (err) {
             console.error("Erreur affectation:", err);
-            setError(err.response?.data?.message || err.response?.data?.error || "Erreur lors de l'affectation");
+            setError(err.response?.data?.error || err.response?.data?.message || "Erreur lors de l'affectation");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDesaffecter = async (structure) => {
-        if (!window.confirm(`⚠️ Voulez-vous vraiment désaffecter le responsable de ${structure.nom_structure || structure.name} ?`)) {
+    // Désaffecter un responsable
+    const handleDesaffecter = async (departement) => {
+        if (!window.confirm(`⚠️ Voulez-vous vraiment désaffecter le responsable de ${departement.nom_departement || departement.name} ?`)) {
             return;
         }
 
@@ -232,26 +199,32 @@ const AffectationResponsable = () => {
         setError('');
         
         try {
-            const affectesRes = await axiosInstance.get('/api/users/responsables-structure/affectes/');
-            let responsablesAffectes = extractDataFromResponse(affectesRes, 'users');
+            // Récupérer le responsable affecté à ce département
+            const affectesRes = await axiosInstance.get('/api/users/responsables-departement/affectes/');
+            let responsablesAffectes = [];
             
-            const structureId = structure._id || structure.id;
+            if (affectesRes.data.users && Array.isArray(affectesRes.data.users)) {
+                responsablesAffectes = affectesRes.data.users;
+            } else if (Array.isArray(affectesRes.data)) {
+                responsablesAffectes = affectesRes.data;
+            }
+            
+            const departementId = departement._id || departement.id;
             const responsable = responsablesAffectes.find(r => {
-                const respStructureId = r.structure_id || r.structureId;
-                return respStructureId === structureId;
+                const respDepartementId = r.departement_id || r.departementId;
+                return respDepartementId === departementId;
             });
             
             if (responsable) {
-                console.log(`🔗 Désaffectation: responsable ${responsable.id} de structure ${structureId}`);
-                await axiosInstance.patch(`/api/users/${responsable.id}/affecter-structure/`, {
-                    structure_id: null
+                await axiosInstance.patch(`/api/users/${responsable.id}/affecter-departement/`, {
+                    departement_id: null
                 });
             }
 
-            setSuccessMessage(`✓ Responsable désaffecté de ${structure.nom_structure || structure.name}`);
+            setSuccessMessage(`✓ Responsable désaffecté de ${departement.nom_departement || departement.name}`);
             setShowSuccess(true);
             
-            await fetchStructures();
+            await fetchDepartements();
             await fetchResponsables();
             
             setTimeout(() => setShowSuccess(false), 3000);
@@ -264,39 +237,52 @@ const AffectationResponsable = () => {
     };
 
     useEffect(() => {
-        const regionId = getRegionId();
-        console.log('🔍 Initialisation - Region ID from localStorage:', regionId);
-        console.log('🔍 User role:', localStorage.getItem('role'));
-        
-        if (regionId) {
-            fetchStructures();
+        const directionId = getDirectionId();
+        if (directionId) {
+            fetchDepartements();
             fetchResponsables();
         } else {
-            setError("Aucune région associée à votre compte. Veuillez contacter l'administrateur.");
+            setError("Aucune direction associée à votre compte. Veuillez contacter l'administrateur.");
         }
-    }, [fetchStructures, fetchResponsables]);
+    }, [fetchDepartements, fetchResponsables]);
 
-    const filteredStructures = structures.filter(structure => {
-        const search = searchTerm.toLowerCase();
-        const nomStructure = structure.nom_structure || structure.name || '';
-        const codeStructure = structure.code_structure || structure.code || '';
-        const responsableNom = structure.responsable_nom || '';
+    // const filteredDepartements = departements.filter(departement => {
+    //     const search = searchTerm.toLowerCase();
+    //     const nomDepartement = departement.nom_departement || departement.name || '';
+    //     const codeDepartement = departement.code_departement || departement.code || '';
+    //     const responsableNom = departement.responsable_nom || '';
         
-        const matchesSearch = codeStructure.toLowerCase().includes(search) ||
-            nomStructure.toLowerCase().includes(search) ||
-            responsableNom.toLowerCase().includes(search);
-        
-        const matchesStatus = filterStatus === 'all' ? true :
-            filterStatus === 'affected' ? structure.responsable_id :
-            filterStatus === 'not_affected' ? !structure.responsable_id : true;
-        
-        return matchesSearch && matchesStatus;
-    });
-
+    //     return (
+    //         codeDepartement.toLowerCase().includes(search) ||
+    //         nomDepartement.toLowerCase().includes(search) ||
+    //         responsableNom.toLowerCase().includes(search)
+    //     );
+    // });
+// Remplacer votre fonction filteredDepartements par celle-ci
+const filteredDepartements = departements.filter(departement => {
+    const search = searchTerm.toLowerCase();
+    const nomDepartement = departement.nom_departement || departement.name || '';
+    const codeDepartement = departement.code_departement || departement.code || '';
+    const responsableNom = departement.responsable_nom || '';
+    
+    const matchesSearch = 
+        codeDepartement.toLowerCase().includes(search) ||
+        nomDepartement.toLowerCase().includes(search) ||
+        responsableNom.toLowerCase().includes(search);
+    
+    // Filtre par statut (Affecté / Non affecté / Tous)
+    if (filterStatus === 'affected') {
+        return matchesSearch && departement.responsable_id;
+    }
+    if (filterStatus === 'not_affected') {
+        return matchesSearch && !departement.responsable_id;
+    }
+    return matchesSearch;
+});
     const stats = {
-        total: structures.length,
-        affected: structures.filter(s => s.responsable_id).length,
-        notAffected: structures.filter(s => !s.responsable_id).length
+        total: departements.length,
+        affected: departements.filter(d => d.responsable_id).length,
+        notAffected: departements.filter(d => !d.responsable_id).length
     };
 
     const cardVariants = {
@@ -351,7 +337,7 @@ const AffectationResponsable = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent"
                             >
-                                Affectation des Responsables
+                                Affectation des Responsables de Département
                             </motion.h1>
                             <motion.p 
                                 initial={{ opacity: 0, x: -20 }}
@@ -359,7 +345,7 @@ const AffectationResponsable = () => {
                                 transition={{ delay: 0.1 }}
                                 className="text-gray-500 mt-2"
                             >
-                                Gérez l'affectation des responsables aux structures de votre région
+                                Gérez l'affectation des responsables aux départements de votre direction
                             </motion.p>
                         </div>
                         
@@ -389,18 +375,6 @@ const AffectationResponsable = () => {
                             </div>
                         </motion.div>
                     )}
-
-                    {/* Debug info (à supprimer en production) */}
-                    {debugInfo && process.env.NODE_ENV === 'development' && (
-                        <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs">
-                            <details>
-                                <summary className="cursor-pointer font-medium">Debug Info</summary>
-                                <pre className="mt-2 overflow-auto">
-                                    {JSON.stringify(debugInfo, null, 2)}
-                                </pre>
-                            </details>
-                        </div>
-                    )}
                 </div>
             </motion.div>
 
@@ -414,14 +388,15 @@ const AffectationResponsable = () => {
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-500 text-sm font-medium">Total Structures</p>
+                                <p className="text-gray-500 text-sm font-medium">Total Départements</p>
                                 <p className="text-3xl font-bold text-gray-800 mt-1">{stats.total}</p>
                             </div>
                             <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
                                 <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                                    <path d="M17 21v-4H7v4" />
-                                    <path d="M7 3v4h10V3" />
+                                    <path d="M9 7h6" />
+                                    <path d="M9 11h6" />
+                                    <path d="M9 15h4" />
                                 </svg>
                             </div>
                         </div>
@@ -469,7 +444,7 @@ const AffectationResponsable = () => {
                                 <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
                                     type="text"
-                                    placeholder="Rechercher par code, nom de structure ou responsable..."
+                                    placeholder="Rechercher par code, nom de département ou responsable..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#FF8500] focus:outline-none transition-all bg-white"
@@ -521,9 +496,9 @@ const AffectationResponsable = () => {
                     </div>
                 </motion.div>
 
-                {/* Liste des structures */}
+                {/* Liste des départements */}
                 <AnimatePresence mode="wait">
-                    {filteredStructures.length === 0 && !loading ? (
+                    {filteredDepartements.length === 0 && !loading ? (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -531,16 +506,10 @@ const AffectationResponsable = () => {
                             className="bg-white rounded-2xl shadow-lg p-16 text-center"
                         >
                             <EmptyIcon className="w-48 h-48 mx-auto text-gray-300" />
-                            <h3 className="text-xl font-semibold text-gray-800 mt-4">Aucune structure trouvée</h3>
+                            <h3 className="text-xl font-semibold text-gray-800 mt-4">Aucun département trouvé</h3>
                             <p className="text-gray-500 mt-2">
-                                {searchTerm ? "Aucun résultat ne correspond à votre recherche" : "Aucune structure n'est associée à votre région"}
+                                {searchTerm ? "Aucun résultat ne correspond à votre recherche" : "Aucun département n'est associé à votre direction"}
                             </p>
-                            <button 
-                                onClick={() => fetchStructures()}
-                                className="mt-4 px-4 py-2 bg-[#FF8500] text-white rounded-lg text-sm"
-                            >
-                                Rafraîchir
-                            </button>
                         </motion.div>
                     ) : (
                         <motion.div
@@ -549,9 +518,9 @@ const AffectationResponsable = () => {
                             animate="visible"
                             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                         >
-                            {filteredStructures.map((structure, index) => (
+                            {filteredDepartements.map((departement, index) => (
                                 <motion.div
-                                    key={structure._id || structure.id || index}
+                                    key={departement._id || departement.id}
                                     custom={index}
                                     variants={cardVariants}
                                     whileHover="hover"
@@ -562,7 +531,7 @@ const AffectationResponsable = () => {
                                     
                                     {/* Badge statut */}
                                     <div className="absolute top-4 right-4 z-10">
-                                        {structure.responsable_id ? (
+                                        {departement.responsable_id ? (
                                             <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
                                                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                                                 Affecté
@@ -576,33 +545,31 @@ const AffectationResponsable = () => {
                                     </div>
 
                                     <div className="relative p-6">
-                                        {/* Icône structure */}
+                                        {/* Icône département */}
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                                                 <svg className="w-7 h-7 text-[#FF8500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                                                    <path d="M17 21v-4H7v4" />
-                                                    <path d="M7 3v4h10V3" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 12l2-2m0 0l2-2m-2 2l2 2m-2-2h6m6 0h6M12 3v2m0 14v2m-7-7h2m8 0h2M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
                                                 </svg>
                                             </div>
                                         </div>
 
-                                        {/* Informations structure */}
+                                        {/* Informations département */}
                                         <div className="mb-4">
                                             <h3 className="text-lg font-bold text-gray-800 mb-1 line-clamp-1">
-                                                {structure.nom_structure || structure.name || 'Sans nom'}
+                                                {departement.nom_departement || departement.name}
                                             </h3>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs text-gray-400">Code:</span>
                                                 <span className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-                                                    {structure.code_structure || structure.code || '-'}
+                                                    {departement.code_departement || departement.code}
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Responsable actuel */}
                                         <div className="mt-4 pt-4 border-t border-gray-100">
-                                            {structure.responsable_id ? (
+                                            {departement.responsable_id ? (
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3 flex-1">
                                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
@@ -612,10 +579,10 @@ const AffectationResponsable = () => {
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-semibold text-gray-800 truncate">
-                                                                {structure.responsable_nom || 'Nom inconnu'}
+                                                                {departement.responsable_nom}
                                                             </p>
                                                             <p className="text-xs text-gray-500 truncate">
-                                                                {structure.responsable_email || 'Email inconnu'}
+                                                                {departement.responsable_email}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -624,7 +591,7 @@ const AffectationResponsable = () => {
                                                         whileTap={{ scale: 0.9 }}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleDesaffecter(structure);
+                                                            handleDesaffecter(departement);
                                                         }}
                                                         className="p-2 text-red-500 hover:bg-red-50 rounded-full transition"
                                                         title="Désaffecter"
@@ -637,7 +604,7 @@ const AffectationResponsable = () => {
                                                     whileHover={{ scale: 1.02 }}
                                                     whileTap={{ scale: 0.98 }}
                                                     onClick={() => {
-                                                        setSelectedStructure(structure);
+                                                        setSelectedDepartement(departement);
                                                         setShowAffectationModal(true);
                                                     }}
                                                     className="w-full py-2.5 text-center text-[#FF8500] text-sm font-semibold hover:bg-[#FF8500]/10 rounded-xl transition flex items-center justify-center gap-2 group"
@@ -670,7 +637,7 @@ const AffectationResponsable = () => {
                                         <div className="absolute top-0 left-0 w-16 h-16 border-4 border-[#FF8500] rounded-full animate-spin border-t-transparent" />
                                     </div>
                                     <div className="mt-6 flex gap-1">
-                                        <span className="text-gray-700 font-medium">Chargement des structures</span>
+                                        <span className="text-gray-700 font-medium">Chargement</span>
                                         <motion.span
                                             animate={{ opacity: [0, 1, 0] }}
                                             transition={{ duration: 1.5, repeat: Infinity }}
@@ -698,13 +665,14 @@ const AffectationResponsable = () => {
                             exit={{ scale: 0.9, y: 20 }}
                             className="w-full max-w-lg bg-white shadow-2xl rounded-2xl overflow-hidden"
                         >
+                            {/* En-tête modal */}
                             <div className="bg-gradient-to-r from-[#FF8500] to-[#FF6B00] px-6 py-4">
                                 <div className="flex justify-between items-center">
                                     <h2 className="text-xl font-semibold text-white">Nouvelle affectation</h2>
                                     <button 
                                         onClick={() => {
                                             setShowAffectationModal(false);
-                                            setSelectedStructure(null);
+                                            setSelectedDepartement(null);
                                             setSelectedResponsable(null);
                                             setError('');
                                         }}
@@ -729,20 +697,22 @@ const AffectationResponsable = () => {
                                 )}
 
                                 <div className="space-y-5">
+                                    {/* Département sélectionné */}
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Structure à affecter
+                                            Département à affecter
                                         </label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
                                             <p className="font-semibold text-gray-800">
-                                                {selectedStructure?.nom_structure || selectedStructure?.name || 'Sélectionnez une structure'}
+                                                {selectedDepartement?.nom_departement || selectedDepartement?.name}
                                             </p>
                                             <p className="text-sm text-gray-500 mt-1">
-                                                Code: {selectedStructure?.code_structure || selectedStructure?.code || '-'}
+                                                Code: {selectedDepartement?.code_departement || selectedDepartement?.code}
                                             </p>
                                         </div>
                                     </div>
 
+                                    {/* Sélection responsable */}
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                                             Responsable à affecter <span className="text-red-500">*</span>
@@ -767,11 +737,12 @@ const AffectationResponsable = () => {
                                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
-                                                Aucun responsable disponible dans votre région
+                                                Aucun responsable disponible dans votre direction
                                             </p>
                                         )}
                                     </div>
 
+                                    {/* Responsable sélectionné preview */}
                                     {selectedResponsable && (
                                         <motion.div 
                                             initial={{ opacity: 0, height: 0 }}
@@ -799,7 +770,7 @@ const AffectationResponsable = () => {
                                     <button
                                         onClick={() => {
                                             setShowAffectationModal(false);
-                                            setSelectedStructure(null);
+                                            setSelectedDepartement(null);
                                             setSelectedResponsable(null);
                                             setError('');
                                         }}
@@ -811,9 +782,9 @@ const AffectationResponsable = () => {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={handleAffecter}
-                                        disabled={!selectedStructure || !selectedResponsable || loading}
+                                        disabled={!selectedDepartement || !selectedResponsable || loading}
                                         className={`px-6 py-2 text-white text-sm font-medium rounded-xl transition flex items-center gap-2 ${
-                                            selectedStructure && selectedResponsable && !loading
+                                            selectedDepartement && selectedResponsable && !loading
                                                 ? 'bg-gradient-to-r from-[#FF8500] to-[#FF6B00] hover:shadow-lg' 
                                                 : 'bg-gray-300 cursor-not-allowed'
                                         }`}
@@ -848,4 +819,4 @@ const AffectationResponsable = () => {
     );
 };
 
-export default AffectationResponsable;
+export default AffectationResponsableDepartement;

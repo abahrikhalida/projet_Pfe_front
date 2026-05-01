@@ -22,7 +22,7 @@ function Login() {
         password: formData.password,
       });
 
-      const { access, refresh, role, nom_complet,photo_profil,region_id, structure_id ,region_name, structure_name } = response.data;
+      const { access, refresh, role, nom_complet,photo_profil,region_id, structure_id ,region_name, structure_name ,direction_id,departement_id} = response.data;
 
       // Store tokens and user info
       localStorage.setItem('access_token', access);
@@ -34,8 +34,11 @@ function Login() {
     // Stocker region_id et structure_id
     if (region_id) localStorage.setItem('region_id', region_id);
     if (structure_id) localStorage.setItem('structure_id', structure_id);
-    if (region_name) localStorage.setItem('region_name', region_name);
-    if (structure_name) localStorage.setItem('structure_name', structure_name);
+    if (direction_id) localStorage.setItem('direction_id', direction_id);
+    if (departement_id) localStorage.setItem('departement_id', departement_id);
+
+
+ 
 
       
 
@@ -53,6 +56,8 @@ function Login() {
       'directeur_region': '/directeur-region',
       'responsable_structure': '/responsable-structure',
       'divisionnaire': '/divisionnaire',
+       'responsable_departement': '/responsable-departement',
+       'directeur_direction': '/directeur-direction', 
       'agent': '/agent'
     };
       navigate(rolePaths[role] || '/login');
