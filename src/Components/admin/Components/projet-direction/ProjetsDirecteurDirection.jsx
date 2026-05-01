@@ -1,11 +1,11 @@
-// Components/Projets/ProjetsDirecteurRegion.jsx
+// Components/Projets/ProjetsDirecteurDirection.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { axiosInstance } from '../../../../axios';
 import ProjetsLayout from '../Projets/ProjetsLayout';
 import DetailsProjetModal from '../Projets/DetailsProjetModal';
 import HistoriqueVersionsModal from '../Projets/HistoriqueVersionsModal';
 
-const ProjetsDirecteurRegion = () => {
+const ProjetsDirecteurDirection = () => {
     const [activeTab, setActiveTab] = useState('soumis');
     const [projets, setProjets] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -13,8 +13,8 @@ const ProjetsDirecteurRegion = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('tous');
     const [selectedStatut, setSelectedStatut] = useState('tous');
-    const [selectedRegion, setSelectedRegion] = useState('');
-    const [regions, setRegions] = useState([]);
+    const [selectedDirection, setSelectedDirection] = useState('');
+    const [directions, setDirections] = useState([]);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [showValidationModal, setShowValidationModal] = useState(false);
@@ -25,69 +25,76 @@ const ProjetsDirecteurRegion = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [counts, setCounts] = useState({});
     const [userInfo, setUserInfo] = useState({
-        region_id: null,
-        region_name: null
+        direction_id: null,
+        direction_name: null
     });
     
     const isInitialMount = useRef(true);
     const isFetching = useRef(false);
 
-    // 🔥 Tabs pour Directeur Région avec les bons endpoints
+    // 🔥 Tabs pour Directeur Direction avec les bons endpoints
     const tabs = [
         { 
             id: 'soumis', 
             label: 'Soumis', 
-            endpoint: '/recap/budget/directeur-region/soumis/', 
+            endpoint: '/recap/budget/directeur-direction/soumis/', 
             color: 'blue', 
             description: 'Projets soumis en attente de validation',
-            statutType: 'workflow' // Affiche statut_workflow
+            statutType: 'workflow'
         },
       
+        // { 
+        //     id: 'revoir', 
+        //     label: '👁️ À revoir', 
+        //     endpoint: '/recap/budget/directeur-direction/revoir/', 
+        //     color: 'purple', 
+        //     description: 'Projets à revoir',
+        //     statutType: 'workflow'
+        // },
         { 
             id: 'valides', 
-            label: 'Validés DR', 
-            endpoint: '/recap/budget/directeur-region/valides/', 
+            label: 'Validés DD', 
+            endpoint: '/recap/budget/directeur-direction/valides/', 
             color: 'green', 
-            description: 'Projets validés par le Directeur Région',
+            description: 'Projets validés par le Directeur Direction',
             statutType: 'final'
         },
-      
         { 
             id: 'rejetes', 
-            label: 'Rejetés DR', 
-            endpoint: '/recap/budget/directeur-region/rejetes/', 
+            label: 'Rejetés DD', 
+            endpoint: '/recap/budget/directeur-direction/rejetes/', 
             color: 'red', 
-            description: 'Projets rejetés par le Directeur Région',
+            description: 'Projets rejetés par le Directeur Direction',
             statutType: 'final'
         },
-            { 
+          { 
             id: 'reserve_directeur', 
             label: 'Réservés Directeur', 
-            endpoint: '/recap/budget/directeur-region/reserve-directeur/', 
+            endpoint: '/recap/budget/directeur-direction/reserve-directeur/', 
             color: 'orange', 
             description: 'Projets réservés par le Directeur',
             statutType: 'workflow'
         },
         // { 
         //     id: 'valides_div', 
-        //     label: 'Validés Divisionnaire', 
-        //     endpoint: '/recap/budget/directeur-region/valide-divisionnaire/', 
+        //     label: '✅ Validés Divisionnaire', 
+        //     endpoint: '/recap/budget/directeur-direction/valide-divisionnaire/', 
         //     color: 'teal', 
         //     description: 'Projets validés par le Divisionnaire',
         //     statutType: 'final'
         // },
         { 
             id: 'rejetes_div', 
-            label: ' Rejetés Divisionnaire', 
-            endpoint: '/recap/budget/directeur-region/rejete-divisionnaire/', 
+            label: 'Rejetés Divisionnaire', 
+            endpoint: '/recap/budget/directeur-direction/rejete-divisionnaire/', 
             color: 'red', 
             description: 'Projets rejetés par le Divisionnaire',
             statutType: 'final'
         },
         { 
             id: 'annules', 
-            label: '🚫 Annulés', 
-            endpoint: '/recap/budget/directeur-region/annule-divisionnaire/', 
+            label: ' Annulés', 
+            endpoint: '/recap/budget/directeur-direction/annule-divisionnaire/', 
             color: 'gray', 
             description: 'Projets annulés par le Divisionnaire',
             statutType: 'final'
@@ -95,7 +102,7 @@ const ProjetsDirecteurRegion = () => {
         // { 
         //     id: 'tous', 
         //     label: '📊 Tous', 
-        //     endpoint: '/recap/budget/directeur-region/tous/', 
+        //     endpoint: '/recap/budget/directeur-direction/tous/', 
         //     color: 'gray', 
         //     description: 'Tous les projets',
         //     statutType: 'mixte'
@@ -104,23 +111,23 @@ const ProjetsDirecteurRegion = () => {
 
     // Récupérer les infos utilisateur
     useEffect(() => {
-        const regionId = localStorage.getItem('region_id');
-        const regionName = localStorage.getItem('region_name');
-        setUserInfo({ region_id: regionId, region_name: regionName });
-        console.log("👤 Directeur Région:", { regionId, regionName });
+        const directionId = localStorage.getItem('direction_id');
+        const directionName = localStorage.getItem('direction_name');
+        setUserInfo({ direction_id: directionId, direction_name: directionName });
+        console.log("👤 Directeur Direction:", { directionId, directionName });
     }, []);
 
-    // Chargement des régions
+    // Chargement des directions
     useEffect(() => {
-        const loadRegions = async () => {
+        const loadDirections = async () => {
             try {
-                const response = await axiosInstance.get('/params/regions');
-                setRegions(response.data.data || []);
+                const response = await axiosInstance.get('/params/directions');
+                setDirections(response.data.data || []);
             } catch (err) {
-                console.error("Erreur chargement régions:", err);
+                console.error("Erreur chargement directions:", err);
             }
         };
-        loadRegions();
+        loadDirections();
     }, []);
 
     // 🔥 Fonction pour obtenir le statut correct selon le type de tab
@@ -140,8 +147,8 @@ const ProjetsDirecteurRegion = () => {
             brouillon: { label: 'Brouillon', color: '#9CA3AF', bg: 'bg-gray-100' },
             soumis: { label: 'Soumis', color: '#3B82F6', bg: 'bg-blue-100' },
             reserve_directeur: { label: 'Réservé Directeur', color: '#F59E0B', bg: 'bg-amber-100' },
-            valide_directeur_region: { label: 'Validé DR', color: '#10B981', bg: 'bg-green-100' },
-            rejete_directeur_region: { label: 'Rejeté DR', color: '#EF4444', bg: 'bg-red-100' },
+            valide_directeur_direction: { label: 'Validé DD', color: '#10B981', bg: 'bg-green-100' },
+            rejete_directeur_direction: { label: 'Rejeté DD', color: '#EF4444', bg: 'bg-red-100' },
             valide_divisionnaire: { label: 'Validé Divisionnaire', color: '#14B8A6', bg: 'bg-teal-100' },
             rejete_divisionnaire: { label: 'Rejeté Divisionnaire', color: '#EF4444', bg: 'bg-red-100' },
             annule_divisionnaire: { label: 'Annulé', color: '#6B7280', bg: 'bg-gray-100' }
@@ -169,12 +176,12 @@ const ProjetsDirecteurRegion = () => {
             let url = currentTab.endpoint;
             const params = new URLSearchParams();
             
-            if (userInfo.region_id) {
-                params.append('region_id', userInfo.region_id);
+            if (userInfo.direction_id) {
+                params.append('direction_id', userInfo.direction_id);
             }
             
-            if (selectedRegion) {
-                params.append('region_filter', selectedRegion);
+            if (selectedDirection) {
+                params.append('direction_filter', selectedDirection);
             }
             if (searchTerm) {
                 params.append('code_division', searchTerm);
@@ -187,7 +194,7 @@ const ProjetsDirecteurRegion = () => {
                 url += `?${params.toString()}`;
             }
             
-            console.log("🔍 Fetching projets:", url);
+            console.log("🔍 Fetching projets Directeur Direction:", url);
             const response = await axiosInstance.get(url);
             
             let projetsData = [];
@@ -213,29 +220,28 @@ const ProjetsDirecteurRegion = () => {
                 setLoading(false);
             }
         }
-    }, [activeTab, searchTerm, selectedType, selectedRegion, userInfo.region_id]);
+    }, [activeTab, searchTerm, selectedType, selectedDirection, userInfo.direction_id]);
 
     // Chargement initial
     useEffect(() => {
-        if (userInfo.region_id && isInitialMount.current) {
+        if (userInfo.direction_id && isInitialMount.current) {
             isInitialMount.current = false;
             fetchProjets(true);
-            // Charger les compteurs pour tous les tabs
             loadAllCounts();
         }
-    }, [userInfo.region_id, fetchProjets]);
+    }, [userInfo.direction_id, fetchProjets]);
 
     // Chargement lors du changement d'onglet
     useEffect(() => {
-        if (!isInitialMount.current && userInfo.region_id) {
+        if (!isInitialMount.current && userInfo.direction_id) {
             fetchProjets(false);
         }
-    }, [activeTab, fetchProjets, userInfo.region_id]);
+    }, [activeTab, fetchProjets, userInfo.direction_id]);
 
     // Debounce pour les filtres
     const filterTimeout = useRef(null);
     useEffect(() => {
-        if (!isInitialMount.current && userInfo.region_id) {
+        if (!isInitialMount.current && userInfo.direction_id) {
             if (filterTimeout.current) {
                 clearTimeout(filterTimeout.current);
             }
@@ -248,7 +254,7 @@ const ProjetsDirecteurRegion = () => {
                 clearTimeout(filterTimeout.current);
             }
         };
-    }, [searchTerm, selectedType, selectedRegion, fetchProjets, userInfo.region_id]);
+    }, [searchTerm, selectedType, selectedDirection, fetchProjets, userInfo.direction_id]);
 
     // Charger les compteurs pour tous les tabs
     const loadAllCounts = async () => {
@@ -257,8 +263,8 @@ const ProjetsDirecteurRegion = () => {
             try {
                 let url = tab.endpoint;
                 const params = new URLSearchParams();
-                if (userInfo.region_id) {
-                    params.append('region_id', userInfo.region_id);
+                if (userInfo.direction_id) {
+                    params.append('direction_id', userInfo.direction_id);
                 }
                 if (params.toString()) {
                     url += `?${params.toString()}`;
@@ -276,7 +282,7 @@ const ProjetsDirecteurRegion = () => {
         try {
             const projetId = projet.id || projet._id;
             
-            const response = await axiosInstance.post(`/recap/budget/valider/directeur-region/${projetId}/`, {
+            const response = await axiosInstance.post(`/recap/budget/valider/directeur-direction/${projetId}/`, {
                 action: action,
                 commentaire: comment
             });
@@ -319,15 +325,14 @@ const ProjetsDirecteurRegion = () => {
         return prev + mensuel;
     };
 
-    const getRegionNom = (regionId) => {
-        if (!regionId) return '-';
-        const region = regions.find(r => r._id === regionId || r.code_region === regionId);
-        return region?.nom_region || regionId;
+    const getDirectionNom = (directionId) => {
+        if (!directionId) return '-';
+        const direction = directions.find(d => d._id === directionId || d.code_direction === directionId);
+        return direction?.nom_direction || directionId;
     };
 
-    // Actions de validation (uniquement pour les projets soumis)
+    // Actions de validation (uniquement pour les projets soumis ou réservés)
     const ValidationActions = ({ projet }) => {
-        // Afficher les boutons uniquement si le statut permet la validation
         const canValidate = projet.statut_workflow === 'soumis' || projet.statut_workflow === 'reserve_directeur';
         const canReject = projet.statut_workflow === 'soumis' || projet.statut_workflow === 'reserve_directeur';
         
@@ -372,8 +377,8 @@ const ProjetsDirecteurRegion = () => {
     return (
         <>
             <ProjetsLayout
-                title="Tableau de bord - Directeur Région"
-                subtitle="Validez ou rejetez les projets de votre région"
+                title="Tableau de bord - Directeur Direction"
+                subtitle="Validez ou rejetez les projets de votre direction"
                 tabs={tabs}
                 projets={projets}
                 loading={loading}
@@ -383,20 +388,22 @@ const ProjetsDirecteurRegion = () => {
                 setSelectedType={setSelectedType}
                 selectedStatut={selectedStatut}
                 setSelectedStatut={setSelectedStatut}
-                selectedRegion={selectedRegion}
-                setSelectedRegion={setSelectedRegion}
-                regions={regions}
+                selectedRegion={selectedDirection}
+                setSelectedRegion={setSelectedDirection}
+                regions={directions}
                 counts={counts}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
-                canShowValidationActions={activeTab === 'soumis'}
+                canShowValidationActions={activeTab === 'soumis' || activeTab === 'reserve_directeur'}
                 getStatutBadge={getStatutBadge}
                 getBudgetTotal={getBudgetTotal}
-                getRegionNom={getRegionNom}
+                getRegionNom={getDirectionNom}
                 onViewDetails={(projet) => { setSelectedProjet(projet); setShowDetailsModal(true); }}
                 onViewHistory={(projet) => { setSelectedProjet(projet); setShowHistoryModal(true); }}
                 validationActions={(projet) => <ValidationActions projet={projet} />}
                 showValidationColumn={true}
+                entiteType="direction"
+                getEntiteNom={(projet) => getDirectionNom(projet.direction_id || projet.direction)}
             />
             
             <DetailsProjetModal 
@@ -468,4 +475,4 @@ const ProjetsDirecteurRegion = () => {
     );
 };
 
-export default ProjetsDirecteurRegion;
+export default ProjetsDirecteurDirection;

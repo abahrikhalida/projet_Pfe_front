@@ -36,7 +36,7 @@ const ModifierUtilisateur = ({ onCancel, user, onSuccess, axiosInstance }) => {
                 }
             });
 
-            await axiosInstance.put(`/users/${user.id}/update/`, formDataToSend, {
+            await axiosInstance.put(`/api/users/${user.id}/update/`, formDataToSend, {
                 headers: { 
                     'Content-Type': 'multipart/form-data'
                 }
@@ -251,58 +251,224 @@ const DeleteUtilisateur = ({ onCancel, user, onSuccess, axiosInstance }) => {
     );
 };
 
-// --- COMPOSANT SELECTEUR DE ROLE INLINE ---
-const RoleSelector = ({ user, roles, onUpdate }) => {
+// --- COMPOSANT SELECTEUR DE ROLE INLINE AVEC SELECTION REGION/DIRECTION ---
+const RoleSelector = ({ user, roles, onUpdate, isLoading }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [showExtraFields, setShowExtraFields] = useState(false);
+    const [selectedRegion, setSelectedRegion] = useState('');
+    const [selectedDirection, setSelectedDirection] = useState('');
+    const [regions, setRegions] = useState([]);
+    const [directions, setDirections] = useState([]);
+    const [loadingRegions, setLoadingRegions] = useState(false);
+    const [loadingDirections, setLoadingDirections] = useState(false);
+    const [pendingRole, setPendingRole] = useState(null);
     const containerRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setIsOpen(false);
+                setShowExtraFields(false);
+                setPendingRole(null);
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const currentRole = roles.find(r => r.value === user.role) || { label: 'Sans role', color: '#94a3b8' };
+    // Fonction utilitaire pour extraire un tableau de la réponse API
+    const extractArrayFromResponse = (responseData) => {
+        // Si c'est déjà un tableau
+        if (Array.isArray(responseData)) return responseData;
+        
+        // Structure MongoDB standard: { success: true, data: [] }
+        if (responseData?.data && Array.isArray(responseData.data)) return responseData.data;
+        
+        // Structure Django REST: { results: [] }
+        if (responseData?.results && Array.isArray(responseData.results)) return responseData.results;
+        
+        // Structure avec items
+        if (responseData?.items && Array.isArray(responseData.items)) return responseData.items;
+        
+        // Si responseData lui-même a un tableau dans une propriété
+        for (const key in responseData) {
+            if (Array.isArray(responseData[key])) {
+                return responseData[key];
+            }
+        }
+        
+        return [];
+    };
+
+    // Charger les régions
+    const fetchRegions = async () => {
+        setLoadingRegions(true);
+        try {
+            const response = await axiosInstance.get('/params/regions/');
+            console.log('Regions response:', response.data);
+            const regionsData = extractArrayFromResponse(response.data);
+            setRegions(regionsData);
+        } catch (err) {
+            console.error("Erreur chargement régions:", err);
+            setRegions([]);
+        } finally {
+            setLoadingRegions(false);
+        }
+    };
+
+    // Charger les directions
+    const fetchDirections = async () => {
+        setLoadingDirections(true);
+        try {
+            const response = await axiosInstance.get('/params/directions/');
+            console.log('Directions response:', response.data);
+            const directionsData = extractArrayFromResponse(response.data);
+            setDirections(directionsData);
+        } catch (err) {
+            console.error("Erreur chargement directions:", err);
+            setDirections([]);
+        } finally {
+            setLoadingDirections(false);
+        }
+    };
+
+    const currentRole = roles.find(r => r.value === user.role) || { 
+        value: user.role, 
+        label: user.role || 'Sans rôle', 
+        color: '#94a3b8' 
+    };
+
+    const handleRoleClick = (role) => {
+        if (user.role === role.value) {
+            setIsOpen(false);
+            return;
+        }
+
+        // Vérifier si le rôle nécessite des informations supplémentaires
+        if (role.value === 'responsable_structure') {
+            setPendingRole(role);
+            setShowExtraFields(true);
+            fetchRegions();
+        } 
+        else if (role.value === 'responsable_departement') {
+            setPendingRole(role);
+            setShowExtraFields(true);
+            fetchDirections();
+        }
+        else {
+            // Pour les autres rôles, assigner directement
+            handleRoleChange(role.value);
+        }
+    };
+
+    const handleRoleChange = async (roleValue, extraData = {}) => {
+        if (user.role === roleValue) {
+            setIsOpen(false);
+            setShowExtraFields(false);
+            return;
+        }
+        
+        setUpdating(true);
+        try {
+            await onUpdate(user.id, roleValue, extraData);
+        } finally {
+            setUpdating(false);
+            setIsOpen(false);
+            setShowExtraFields(false);
+            setPendingRole(null);
+            // Réinitialiser les sélections
+            setSelectedRegion('');
+            setSelectedDirection('');
+            setRegions([]);
+            setDirections([]);
+        }
+    };
+
+    const handleConfirmWithExtra = () => {
+        if (!pendingRole) return;
+
+        const extraData = {};
+        
+        if (pendingRole.value === 'responsable_structure') {
+            if (!selectedRegion) {
+                alert("Veuillez sélectionner une région");
+                return;
+            }
+            extraData.region_id = selectedRegion;
+        }
+        
+        if (pendingRole.value === 'responsable_departement') {
+            if (!selectedDirection) {
+                alert("Veuillez sélectionner une direction");
+                return;
+            }
+            extraData.direction_id = selectedDirection;
+        }
+
+        handleRoleChange(pendingRole.value, extraData);
+    };
+
+    // Fonction pour obtenir l'affichage du nom d'une région/direction
+    const getDisplayName = (item) => {
+        // Essayer différents champs possibles selon votre modèle MongoDB
+        return item.nom || 
+               item.name || 
+               item.libelle || 
+               item.label || 
+               item.titre ||
+               item.intitule ||
+               (item.nom_region) ||
+               (item.nom_direction) ||
+               `ID: ${item._id || item.id}`;
+    };
+
+    // Fonction pour obtenir l'ID d'un item
+    const getItemId = (item) => {
+        return item._id || item.id;
+    };
 
     return (
         <div className="relative" ref={containerRef}>
             <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-[12px] transition-all min-w-[130px] border"
+                onClick={() => !updating && !isLoading && setIsOpen(!isOpen)}
+                disabled={updating || isLoading}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-[12px] transition-all min-w-[150px] border disabled:opacity-50"
                 style={{ 
                     backgroundColor: `${currentRole.color}08`, 
                     borderColor: `${currentRole.color}20` 
                 }}
             >
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: currentRole.color }} />
-                <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: currentRole.color }}>
-                    {currentRole.label}
+                {updating ? (
+                    <div className="w-2 h-2 rounded-full animate-spin border-2 border-[#FF8500] border-t-transparent" />
+                ) : (
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: currentRole.color }} />
+                )}
+                <span className="text-[11px] font-bold uppercase tracking-wide truncate" style={{ color: currentRole.color }}>
+                    {updating ? 'Mise à jour...' : currentRole.label}
                 </span>
-                <svg className={`ml-auto w-3 h-3 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: currentRole.color }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-                </svg>
+                {!updating && (
+                    <svg className={`ml-auto w-3 h-3 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: currentRole.color }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                    </svg>
+                )}
             </motion.button>
 
             <AnimatePresence>
-                {isOpen && (
+                {isOpen && !updating && !showExtraFields && (
                     <motion.div
                         initial={{ opacity: 0, y: 8, scale: 0.95 }}
                         animate={{ opacity: 1, y: 4, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                        className="absolute left-0 top-full z-[100] min-w-[160px] bg-white rounded-xl shadow-2xl border border-gray-100"
+                        className="absolute left-0 top-full z-[100] min-w-[220px] bg-white rounded-xl shadow-2xl border border-gray-100 max-h-[350px] overflow-y-auto"
                     >
                         {roles.map((role) => (
                             <button
                                 key={role.value}
-                                onClick={() => {
-                                    if(user.role !== role.value) onUpdate(user.id, role.value);
-                                    setIsOpen(false);
-                                }}
+                                onClick={() => handleRoleClick(role)}
                                 className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-all first:rounded-t-xl last:rounded-b-xl ${
                                     user.role === role.value 
                                     ? 'bg-gray-50 text-gray-900 cursor-default' 
@@ -310,9 +476,9 @@ const RoleSelector = ({ user, roles, onUpdate }) => {
                                 }`}
                             >
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: role.color }} />
-                                {role.label}
+                                <span className="flex-1 text-left">{role.label}</span>
                                 {user.role === role.value && (
-                                    <svg className="ml-auto w-3.5 h-3.5 text-[#FF8500]" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-3.5 h-3.5 text-[#FF8500]" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
                                 )}
@@ -320,15 +486,133 @@ const RoleSelector = ({ user, roles, onUpdate }) => {
                         ))}
                     </motion.div>
                 )}
+
+                {/* Modal pour sélectionner région/direction */}
+                {showExtraFields && pendingRole && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="bg-white rounded-2xl p-6 w-[500px] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    {pendingRole.value === 'responsable_structure' 
+                                        ? 'Assigner comme Responsable de Structure' 
+                                        : 'Assigner comme Responsable de Département'}
+                                </h3>
+                                <button 
+                                    onClick={() => {
+                                        setShowExtraFields(false);
+                                        setPendingRole(null);
+                                    }}
+                                    className="p-1 hover:bg-gray-100 rounded-full"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F4F4F" strokeWidth="2">
+                                        <path d="M18 6L6 18M6 6L18 18" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600">
+                                    Vous êtes sur le point d'assigner le rôle <span className="font-semibold text-[#FF8500]">{pendingRole.label}</span> à <span className="font-semibold">{user.prenom} {user.nom}</span>
+                                </p>
+
+                                {pendingRole.value === 'responsable_structure' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Région <span className="text-red-500">*</span>
+                                        </label>
+                                        {loadingRegions ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-[#FF8500] border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-sm text-gray-500">Chargement des régions...</span>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={selectedRegion}
+                                                onChange={(e) => setSelectedRegion(e.target.value)}
+                                                className="w-full h-10 px-3 rounded-[20px] border border-gray-300 focus:border-[#FF8500] focus:outline-none text-sm"
+                                            >
+                                                <option value="">-- Sélectionner une région --</option>
+                                                {Array.isArray(regions) && regions.length > 0 ? (
+                                                    regions.map(region => (
+                                                        <option key={getItemId(region)} value={getItemId(region)}>
+                                                            {getDisplayName(region)}
+                                                        </option>
+                                                    ))
+                                                ) : (
+                                                    <option disabled>Aucune région disponible</option>
+                                                )}
+                                            </select>
+                                        )}
+                                    </div>
+                                )}
+
+                                {pendingRole.value === 'responsable_departement' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Direction <span className="text-red-500">*</span>
+                                        </label>
+                                        {loadingDirections ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-[#FF8500] border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-sm text-gray-500">Chargement des directions...</span>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={selectedDirection}
+                                                onChange={(e) => setSelectedDirection(e.target.value)}
+                                                className="w-full h-10 px-3 rounded-[20px] border border-gray-300 focus:border-[#FF8500] focus:outline-none text-sm"
+                                            >
+                                                <option value="">-- Sélectionner une direction --</option>
+                                                {Array.isArray(directions) && directions.length > 0 ? (
+                                                    directions.map(direction => (
+                                                        <option key={getItemId(direction)} value={getItemId(direction)}>
+                                                            {getDisplayName(direction)}
+                                                        </option>
+                                                    ))
+                                                ) : (
+                                                    <option disabled>Aucune direction disponible</option>
+                                                )}
+                                            </select>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
+                                    <button
+                                        onClick={() => {
+                                            setShowExtraFields(false);
+                                            setPendingRole(null);
+                                        }}
+                                        className="px-4 py-2 rounded-[25px] bg-gray-200 text-gray-700 hover:bg-gray-300 transition text-sm"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmWithExtra}
+                                        className="px-4 py-2 rounded-[25px] bg-[#FF8500] text-white hover:bg-[#e67800] transition text-sm"
+                                    >
+                                        Confirmer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
             </AnimatePresence>
         </div>
     );
 };
-
 // --- COMPOSANT PRINCIPAL ---
 const UsersListe = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [updatingRoles, setUpdatingRoles] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
@@ -339,25 +623,38 @@ const UsersListe = () => {
     const [showModifyModal, setShowModifyModal] = useState(false);
     const [userToModify, setUserToModify] = useState(null);
 
+    // Liste complète des rôles selon le backend Django
     const roles = [
         { value: 'admin', label: 'Admin', color: '#FF4444' },
         { value: 'chef', label: 'Chef', color: '#FF8500' },
-        { value: 'directeur_region', label: 'Dir. Region', color: '#3B82F6' },
-        { value: 'responsable_structure', label: 'Resp. Structure', color: '#10B981' },
-        { value: 'agent', label: 'Agent', color: '#8B5CF6' },
-        { value: 'directeur', label: 'directeur', color: '#8B5C67' },
-       { value: 'divisionnaire', label: 'divisionnaire', color: '#5accfa' }
-
-
+        { value: 'directeur', label: 'Directeur', color: '#EC4899' },
+        { value: 'directeur_region', label: 'Directeur de Région', color: '#3B82F6' },
+        { value: 'directeur_direction', label: 'Directeur de Direction', color: '#8B5CF6' },
+        { value: 'responsable_structure', label: 'Responsable de Structure', color: '#10B981' },
+        { value: 'responsable_departement', label: 'Responsable de Département', color: '#06B6D4' },
+        { value: 'divisionnaire', label: 'Divisionnaire', color: '#14B8A6' },
+        { value: 'agent', label: 'Agent', color: '#6B7280' }
     ];
+
+    // Grouper les rôles par catégorie (optionnel - pour une meilleure organisation)
+    const roleGroups = {
+        'Administration': ['admin'],
+        'Direction': ['directeur', 'directeur_region', 'directeur_direction'],
+        'Responsables': ['responsable_structure', 'responsable_departement'],
+        'Opérationnel': ['chef', 'divisionnaire', 'agent']
+    };
 
     const fetchUsers = async () => {
         setLoading(true);
         try {
             const response = await axiosInstance.get('/api/users/');
-            setUsers(response.data.users || []);
+            const usersData = response.data.users || response.data.data || response.data || [];
+            setUsers(usersData);
         } catch (err) {
             console.error("Erreur chargement utilisateurs:", err);
+            if (err.response?.status === 401) {
+                console.error("Non authentifié");
+            }
         } finally {
             setLoading(false);
         }
@@ -374,21 +671,102 @@ const UsersListe = () => {
         setTimeout(() => setShowSuccess(false), 3000);
     };
 
-    const updateRoleFast = async (userId, newRole) => {
-        try {
-            const response = await axiosInstance.post('/api/assign-role/', {
-                user_id: userId,
-                role: newRole
-            });
-            if (response.data.status === 'success') {
-                const label = roles.find(r => r.value === newRole)?.label;
-                handleSuccess(`Role ${label} attribue`);
+  // Fonction d'assignation de rôle adaptée au backend Django avec données supplémentaires
+const updateRoleFast = async (userId, newRole, extraData = {}) => {
+    setUpdatingRoles(prev => ({ ...prev, [userId]: true }));
+    
+    try {
+        // Construire le payload avec les données supplémentaires
+        const payload = {
+            user_id: userId,
+            role: newRole,
+            ...extraData
+        };
+        
+        const response = await axiosInstance.post('/api/assign-role/', payload);
+        
+        if (response.data.status === 'success') {
+            const roleLabel = roles.find(r => r.value === newRole)?.label || newRole;
+            
+            // Message spécifique selon le type de rôle
+            let successMsg = `Rôle "${roleLabel}" attribué avec succès`;
+            if (newRole === 'agent') {
+                successMsg = `Agent créé avec succès et rattaché à un chef`;
+            } else if (newRole === 'responsable_structure') {
+                successMsg = `Responsable de structure assigné avec succès`;
+            } else if (newRole === 'responsable_departement') {
+                successMsg = `Responsable de département assigné avec succès`;
             }
-        } catch (err) {
-            console.error("Erreur assignation role:", err);
-            alert(err.response?.data?.message || "Erreur lors de l'assignation");
+            
+            handleSuccess(successMsg);
+            
+            // Mettre à jour l'utilisateur localement
+            setUsers(prevUsers => 
+                prevUsers.map(user => 
+                    user.id === userId 
+                        ? { 
+                            ...user, 
+                            role: newRole,
+                            region_id: extraData.region_id || user.region_id,
+                            structure_id: extraData.structure_id || user.structure_id,
+                            direction_id: extraData.direction_id || user.direction_id,
+                            departement_id: extraData.departement_id || user.departement_id
+                        }
+                        : user
+                )
+            );
+        } else {
+            const errorMsg = response.data.message || "Erreur lors de l'assignation";
+            alert(errorMsg);
         }
-    };
+    } catch (err) {
+        console.error("Erreur assignation rôle:", err);
+        
+        let errorMessage = "Erreur lors de l'assignation du rôle";
+        
+        if (err.response) {
+            const data = err.response.data;
+            if (data.message) {
+                errorMessage = data.message;
+            } else if (data.error_details) {
+                errorMessage = data.error_details;
+            } else if (data.suggestion) {
+                errorMessage = `${data.message || 'Erreur'}. ${data.suggestion}`;
+            }
+            
+            // Gestion spéciale pour les différents cas d'erreur
+            switch (data.code) {
+                case 'MISSING_REGION_ID':
+                    errorMessage = "❌ Veuillez sélectionner une région pour le responsable de structure.";
+                    break;
+                case 'MISSING_DIRECTION_ID':
+                    errorMessage = "❌ Veuillez sélectionner une direction pour le responsable de département.";
+                    break;
+                case 'NO_CHEF_AVAILABLE':
+                    errorMessage = "❌ Impossible de créer un agent : Aucun chef n'est disponible. Veuillez d'abord assigner un chef.";
+                    break;
+                case 'FORBIDDEN':
+                    errorMessage = "⛔ Vous n'avez pas les droits pour assigner des rôles.";
+                    break;
+                case 'INVALID_ROLE':
+                    errorMessage = `❌ Rôle invalide. Rôles disponibles: ${data.valid_roles?.join(', ') || ''}`;
+                    break;
+                case 'USER_NOT_FOUND':
+                    errorMessage = `❌ Utilisateur non trouvé.`;
+                    break;
+                case 'MISSING_FIELDS':
+                    errorMessage = `❌ Champs manquants: ${data.missing_fields?.join(', ') || ''}`;
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        alert(errorMessage);
+    } finally {
+        setUpdatingRoles(prev => ({ ...prev, [userId]: false }));
+    }
+};
 
     const openModifyModal = (user) => {
         setUserToModify(user);
@@ -402,7 +780,7 @@ const UsersListe = () => {
 
     const handleModifySuccess = () => {
         closeModifyModal();
-        handleSuccess('Utilisateur modifie avec succes');
+        handleSuccess('Utilisateur modifié avec succès');
     };
 
     const filteredUsers = users.filter(user => {
@@ -417,6 +795,11 @@ const UsersListe = () => {
         return matchesSearch && matchesRole;
     });
 
+    // Compter les utilisateurs par rôle
+    const getRoleCount = (roleValue) => {
+        return users.filter(user => user.role === roleValue).length;
+    };
+
     const tableRowVariants = {
         hidden: { opacity: 0, x: -20 },
         visible: (i) => ({
@@ -429,7 +812,7 @@ const UsersListe = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            {/* En-tête séparé comme Parametres */}
+            {/* En-tête */}
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -462,7 +845,7 @@ const UsersListe = () => {
             {/* Contenu principal */}
             <div className="p-8">
                 <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6">
-                    {/* Bouton Ajouter dans le contenu principal */}
+                    {/* Bouton Ajouter */}
                     <div className="flex justify-end mb-6">
                         <button
                             onClick={() => setShowCreateModal(true)}
@@ -482,9 +865,11 @@ const UsersListe = () => {
                             onChange={(e) => setSelectedRole(e.target.value)}
                             className="h-[43px] px-4 rounded-[20px] border-2 border-[#D9E1E7] outline-none focus:border-[#FF8500] bg-white"
                         >
-                            <option value="">Tous les roles</option>
+                            <option value=""> Tous les rôles ({users.length})</option>
                             {roles.map(role => (
-                                <option key={role.value} value={role.value}>{role.label}</option>
+                                <option key={role.value} value={role.value}>
+                                    {role.label} ({getRoleCount(role.value)})
+                                </option>
                             ))}
                         </select>
 
@@ -502,20 +887,26 @@ const UsersListe = () => {
                         </div>
                     </div>
 
-                    <div className="mb-4 text-sm text-gray-500">
-                        {filteredUsers.length} utilisateur(s) trouvé(s)
+                    {/* Statistiques rapides */}
+                    <div className="mb-4 flex flex-wrap gap-2 text-xs text-gray-500">
+                        <span className="px-2 py-1 bg-gray-100 rounded-full">Total: {filteredUsers.length} utilisateur(s)</span>
+                        {selectedRole && (
+                            <span className="px-2 py-1 bg-[#FF8500]/10 rounded-full text-[#FF8500]">
+                                Filtre: {roles.find(r => r.value === selectedRole)?.label}
+                            </span>
+                        )}
                     </div>
 
                     {/* Tableau */}
                     <div className="rounded-lg border border-gray-100 overflow-x-auto">
-                        <table className="w-full min-w-[800px]">
+                        <table className="w-full min-w-[900px]">
                             <thead>
                                 <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
                                     <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Matricule</th>
                                     <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Nom complet</th>
                                     <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Email</th>
-                                    <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Role</th>
-                                    <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Telephone</th>
+                                    <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Rôle</th>
+                                    <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Téléphone</th>
                                     <th className="py-3 px-3 text-left text-xs font-semibold text-[#4A4A4A]">Actions</th>
                                 </tr>
                             </thead>
@@ -542,7 +933,9 @@ const UsersListe = () => {
                                                 className="border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150"
                                             >
                                                 <td className="py-3 px-3">
-                                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">{user.matricule || '-'}</span>
+                                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-mono">
+                                                        {user.matricule || '-'}
+                                                    </span>
                                                 </td>
                                                 <td className="py-3 px-3">
                                                     <div className="flex items-center gap-2">
@@ -562,9 +955,16 @@ const UsersListe = () => {
                                                     </div>
                                                 </td>
                                                 <td className="py-3 px-3">
-                                                    <RoleSelector user={user} roles={roles} onUpdate={updateRoleFast} />
+                                                    <RoleSelector 
+                                                        user={user} 
+                                                        roles={roles} 
+                                                        onUpdate={updateRoleFast}
+                                                        isLoading={updatingRoles[user.id]}
+                                                    />
                                                 </td>
-                                                <td className="py-3 px-3 text-sm text-gray-500">{user.telephone || '-'}</td>
+                                                <td className="py-3 px-3 text-sm text-gray-500">
+                                                    {user.telephone || '-'}
+                                                </td>
                                                 <td className="py-3 px-3">
                                                     <div className="flex items-center gap-1">
                                                         <motion.button 
@@ -607,7 +1007,7 @@ const UsersListe = () => {
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* Modals - inchangés */}
             {showDeleteConfirm && selectedUser && (
                 <DeleteUtilisateur
                     onCancel={() => setShowDeleteConfirm(false)}
@@ -615,7 +1015,7 @@ const UsersListe = () => {
                     onSuccess={() => {
                         setShowDeleteConfirm(false);
                         setSelectedUser(null);
-                        handleSuccess('Utilisateur supprime');
+                        handleSuccess('Utilisateur supprimé');
                     }}
                     axiosInstance={axiosInstance}
                 />
@@ -646,23 +1046,13 @@ const UsersListe = () => {
                         exit={{ opacity: 0, y: 20 }}
                         className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl z-50 text-sm font-medium"
                     >
-                        {successMessage}
+                        ✅ {successMessage}
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <style jsx>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-                
-                .animate-pulse {
-                    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-                }
-            `}</style>
         </div>
     );
 };
 
 export default UsersListe;
+

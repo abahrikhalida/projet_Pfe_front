@@ -1,137 +1,225 @@
 // Components/Projets/ProjetsChef.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { axiosInstance } from '../../../../axios';
-import ProjetsLayout from './ProjetsLayout';
-import ValidationActions from './ValidationActions';
-import DetailsProjetModal from './DetailsProjetModal';
-import HistoriqueVersionsModal from './HistoriqueVersionsModal';
-import { useDataFilter } from '../../Components/comon/DataFilter';
-
-// Icône d'export Excel
-const ExcelIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <path d="M10 14h4" />
-        <path d="M12 12v4" />
-        <path d="M8 12h.01" />
-        <path d="M16 12h.01" />
-    </svg>
-);
+import ProjetsLayout from '../Projets/ProjetsLayout';
+import DetailsProjetModal from '../Projets/DetailsProjetModal';
+import HistoriqueVersionsModal from '../Projets/HistoriqueVersionsModal';
 
 const ProjetsChef = () => {
-    const [activeTab, setActiveTab] = useState('agentStatus');
+    const [activeTab, setActiveTab] = useState('a_valider');
     const [projets, setProjets] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('tous');
     const [selectedStatut, setSelectedStatut] = useState('tous');
-    const [selectedRegion, setSelectedRegion] = useState('');
+    const [selectedEntite, setSelectedEntite] = useState('');
     const [regions, setRegions] = useState([]);
+    const [directions, setDirections] = useState([]);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [showValidationModal, setShowValidationModal] = useState(false);
     const [selectedProjet, setSelectedProjet] = useState(null);
+    const [validationAction, setValidationAction] = useState('');
+    const [validationComment, setValidationComment] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [counts, setCounts] = useState({});
-    const [exporting, setExporting] = useState(false);
+    
+    const isInitialMount = useRef(true);
+    const isFetching = useRef(false);
 
-    const { getUserInfo } = useDataFilter();
-    const userInfo = getUserInfo();
-
-    // Onglets pour Chef (GET endpoints)
+    // Tabs pour Chef (mélange région et direction)
     const tabs = [
         { 
-            id: 'agentStatus', 
-            label: '  À Traiter', 
-            endpoint: '/recap/budget/chef/AgentStatus/', 
+            id: 'a_valider', 
+            label: 'À valider', 
+            endpoint: '/recap/budget/chef/valider-DR-DD/', 
             color: 'blue', 
-            description: 'Projets validés par Agent à traiter',
+            description: 'Projets validés par Directeurs (Région/Direction) en attente de validation Chef',
             icon: '📋'
         },
         { 
-            id: 'valides', 
-            label: '  Validés', 
-            endpoint: '/recap/budget/chef/valides/', 
+            id: 'pre_approuves', 
+            label: '✓ Pré-approuvés', 
+            endpoint: '/recap/budget/chef/pre_approuves/', 
             color: 'green', 
-            description: 'Projets que vous avez déjà validés',
-            icon: '✅'
+            description: 'Projets pré-approuvés par le Chef',
+            icon: '✓'
         },
         { 
-            id: 'reserveChef', 
-            label: '  Réservés', 
+            id: 'reserve_chef', 
+            label: 'Réservés Chef', 
             endpoint: '/recap/budget/chef/reserve-chef/', 
             color: 'orange', 
-            description: 'Projets que vous avez réservés ',
+            description: 'Projets réservés par le Chef',
             icon: '🔄'
         },
         { 
-            id: 'valide', 
-            label: '  valide', 
-            endpoint: '/recap/budget/divisionnaire/valides/', 
-            color: 'purple', 
-            description: 'Tous les projets valide par divisionnaire peut export excel',
+            id: 'tous', 
+            label: ' Tous', 
+            endpoint: '/recap/budget/chef/tous/', 
+            color: 'gray', 
+            description: 'Tous les projets',
             icon: '📊'
-        },
-        // { 
-        //     id: 'historique', 
-        //     label: '  Historique', 
-        //     endpoint: '/recap/budget/chef/historique/', 
-        //     color: 'gray', 
-        //     description: 'Historique complet de tous les projets',
-        //     icon: '📜'
-        // }
+        }
     ];
 
+    // Récupérer les listes pour les filtres
     useEffect(() => {
-        fetchRegions();
+        const loadLists = async () => {
+            try {
+                const [regionsRes, directionsRes] = await Promise.all([
+                    axiosInstance.get('/params/regions'),
+                    axiosInstance.get('/params/directions')
+                ]);
+                setRegions(regionsRes.data.data || []);
+                setDirections(directionsRes.data.data || []);
+            } catch (err) {
+                console.error("Erreur chargement listes:", err);
+            }
+        };
+        loadLists();
     }, []);
 
-    useEffect(() => {
-        if (activeTab) fetchProjets();
-    }, [activeTab]);
-
-    const fetchRegions = async () => {
-        try {
-            const response = await axiosInstance.get('/params/regions');
-            setRegions(response.data.data || []);
-        } catch (err) {
-            console.error("Erreur chargement régions:", err);
+    // Fonction pour obtenir le nom de l'entité (région ou direction) selon le projet
+    const getEntiteNom = (projet) => {
+        if (projet.direction_region_nom) {
+            return projet.direction_region_nom;
         }
+        if (projet.region_nom) return projet.region_nom;
+        if (projet.direction_nom) return projet.direction_nom;
+        return projet.region || projet.direction || '-';
     };
 
-    const fetchProjets = async () => {
-        setLoading(true);
+    // Fonction pour obtenir le statut badge
+    const getStatutBadge = (projet) => {
+        const statut = projet.statut_workflow || projet.statut_final || 'brouillon';
+        const config = {
+            brouillon: { label: 'Brouillon', color: '#9CA3AF', bg: 'bg-gray-100' },
+            soumis: { label: 'Soumis', color: '#3B82F6', bg: 'bg-blue-100' },
+            valide_directeur_region: { label: 'Validé Dir.Région', color: '#10B981', bg: 'bg-green-100' },
+            valide_directeur_direction: { label: 'Validé Dir.Direction', color: '#10B981', bg: 'bg-green-100' },
+            pre_approuve_chef: { label: 'Pré-approuvé Chef', color: '#8B5CF6', bg: 'bg-purple-100' },
+            reserve_chef: { label: 'Réservé Chef', color: '#F59E0B', bg: 'bg-amber-100' },
+            reserve_directeur: { label: 'Réservé Directeur', color: '#F59E0B', bg: 'bg-amber-100' },
+            approuve_directeur: { label: 'Approuvé Dir.', color: '#10B981', bg: 'bg-green-100' },
+            valide_divisionnaire: { label: 'Validé Div.', color: '#14B8A6', bg: 'bg-teal-100' },
+            rejete_divisionnaire: { label: 'Rejeté Div.', color: '#EF4444', bg: 'bg-red-100' },
+            annule_divisionnaire: { label: 'Annulé', color: '#6B7280', bg: 'bg-gray-100' }
+        };
+        const c = config[statut] || { label: statut, color: '#6B7280', bg: 'bg-gray-100' };
+        return <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${c.bg} whitespace-nowrap`} style={{ color: c.color }}>{c.label}</span>;
+    };
+
+    const getBudgetTotal = (projet) => {
+        if (projet.cout_initial_total) return parseFloat(projet.cout_initial_total);
+        const prev = (parseFloat(projet.prev_n_plus2_total) || 0) + (parseFloat(projet.prev_n_plus3_total) || 0) + (parseFloat(projet.prev_n_plus4_total) || 0) + (parseFloat(projet.prev_n_plus5_total) || 0);
+        const mensuel = parseFloat(projet.prev_n_plus1_total) || 0;
+        return prev + mensuel;
+    };
+
+    // Fonction fetchProjets
+    const fetchProjets = useCallback(async (isInitial = false) => {
+        if (isFetching.current) return;
+        
+        const currentTab = tabs.find(t => t.id === activeTab);
+        if (!currentTab) return;
+        
+        isFetching.current = true;
+        if (isInitial) {
+            setInitialLoading(true);
+        } else {
+            setLoading(true);
+        }
+        
         try {
-            const currentTab = tabs.find(t => t.id === activeTab);
-            const response = await axiosInstance.get(currentTab.endpoint);
+            let url = currentTab.endpoint;
+            const params = new URLSearchParams();
+            
+            if (searchTerm) {
+                params.append('code_division', searchTerm);
+            }
+            if (selectedType !== 'tous') {
+                params.append('type_projet', selectedType);
+            }
+            if (selectedEntite) {
+                params.append('entite_id', selectedEntite);
+            }
+            
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+            
+            console.log("🔍 Fetching projets Chef:", url);
+            const response = await axiosInstance.get(url);
             
             let projetsData = [];
-            if (response.data?.projets) projetsData = response.data.projets;
-            else if (response.data?.data) projetsData = response.data.data;
-            else if (Array.isArray(response.data)) projetsData = response.data;
+            if (response.data?.projets) {
+                projetsData = response.data.projets;
+                setCounts(prev => ({ ...prev, [currentTab.id]: response.data.count || projetsData.length }));
+            } else if (response.data?.data) {
+                projetsData = response.data.data;
+            } else if (Array.isArray(response.data)) {
+                projetsData = response.data;
+            }
             
             setProjets(projetsData);
-            updateCounts();
-            console.log(`✅ Chargé ${projetsData.length} projets pour onglet ${activeTab}`);
+            
         } catch (err) {
-            console.error("Erreur chargement projets:", err);
+            console.error("❌ Erreur fetchProjets Chef:", err);
             setProjets([]);
         } finally {
-            setLoading(false);
+            isFetching.current = false;
+            if (isInitial) {
+                setInitialLoading(false);
+            } else {
+                setLoading(false);
+            }
         }
-    };
+    }, [activeTab, searchTerm, selectedType, selectedEntite]);
 
-    const updateCounts = async () => {
+    // Chargement initial
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            fetchProjets(true);
+            loadAllCounts();
+        }
+    }, [fetchProjets]);
+
+    // Chargement lors du changement d'onglet
+    useEffect(() => {
+        if (!isInitialMount.current) {
+            fetchProjets(false);
+        }
+    }, [activeTab, fetchProjets]);
+
+    // Debounce pour les filtres
+    const filterTimeout = useRef(null);
+    useEffect(() => {
+        if (!isInitialMount.current) {
+            if (filterTimeout.current) {
+                clearTimeout(filterTimeout.current);
+            }
+            filterTimeout.current = setTimeout(() => {
+                fetchProjets(false);
+            }, 300);
+        }
+        return () => {
+            if (filterTimeout.current) {
+                clearTimeout(filterTimeout.current);
+            }
+        };
+    }, [searchTerm, selectedType, selectedEntite, fetchProjets]);
+
+    // Charger les compteurs pour tous les tabs
+    const loadAllCounts = async () => {
         const newCounts = {};
         for (const tab of tabs) {
             try {
                 const response = await axiosInstance.get(tab.endpoint);
-                let count = 0;
-                if (response.data?.projets) count = response.data.projets.length;
-                else if (response.data?.data) count = response.data.data.length;
-                else if (Array.isArray(response.data)) count = response.data.length;
-                newCounts[tab.id] = count;
+                newCounts[tab.id] = response.data?.count || response.data?.projets?.length || 0;
             } catch (err) {
                 newCounts[tab.id] = 0;
             }
@@ -139,92 +227,111 @@ const ProjetsChef = () => {
         setCounts(newCounts);
     };
 
-    const handleSuccess = (message) => {
-        setSuccessMessage(message);
-        setShowSuccess(true);
-        fetchProjets();
-        setTimeout(() => setShowSuccess(false), 3000);
-    };
-
-    const handleExportExcel = async () => {
-        setExporting(true);
+    // 🔥 Fonction pour pré-approuver (sans modal)
+    const handlePreApprouve = async (projet) => {
         try {
-            const response = await axiosInstance.get(
-                '/recap/budget/export/valides-divisionnaire/',
-                {
-                    responseType: 'blob'
-                }
-            );
+            const projetId = projet.id || projet._id;
+            const response = await axiosInstance.post(`/recap/budget/valider/chef/${projetId}/`, {
+                action: 'pre_approuver',
+                commentaire: ""
+            });
             
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `projets_valides_divisionnaire.xlsx`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-            
-            handleSuccess('Export Excel réussi');
+            if (response.data.success) {
+                setSuccessMessage(response.data.message);
+                setShowSuccess(true);
+                await fetchProjets(false);
+                await loadAllCounts();
+                setTimeout(() => setShowSuccess(false), 3000);
+            }
         } catch (err) {
-            console.error("Erreur export Excel:", err);
-            alert("Erreur lors de l'export Excel");
-        } finally {
-            setExporting(false);
+            console.error("Erreur pré-approuvement:", err);
+            alert(err.response?.data?.error || "Erreur lors du pré-approuvement");
         }
     };
 
-    const getStatutBadge = (statut) => {
-        const statutConfig = {
-            brouillon: { label: 'Brouillon', color: '#9CA3AF', bg: 'bg-gray-100' },
-            soumis: { label: 'Soumis', color: '#3B82F6', bg: 'bg-blue-100' },
-            valide_directeur_region: { label: 'Validé DR', color: '#3B82F6', bg: 'bg-blue-100' },
-            valide_agent: { label: 'Validé Agent', color: '#8B5CF6', bg: 'bg-purple-100' },
-            reserve_agent: { label: 'Réservé Agent', color: '#F59E0B', bg: 'bg-amber-100' },
-            valide_chef: { label: 'Validé Chef', color: '#10B981', bg: 'bg-green-100' },
-            reserve_chef: { label: 'Réservé Chef', color: '#F59E0B', bg: 'bg-amber-100' },
-            valide_directeur: { label: 'Validé Directeur', color: '#EC4899', bg: 'bg-pink-100' },
-            valide_divisionnaire: { label: 'Validé Divisionnaire', color: '#14B8A6', bg: 'bg-teal-100' },
-            rejete: { label: 'Rejeté', color: '#EF4444', bg: 'bg-red-100' },
-            cloture: { label: 'Clôturé', color: '#6B7280', bg: 'bg-gray-100' }
-        };
-        const config = statutConfig[statut] || { label: statut, color: '#6B7280', bg: 'bg-gray-100' };
+    // Ouvrir modal pour réserver (avec commentaire optionnel)
+    const openValidationModal = (projet, action) => {
+        setSelectedProjet(projet);
+        setValidationAction(action);
+        setValidationComment('');
+        setShowValidationModal(true);
+    };
+
+    // Confirmer la validation (pour réserver)
+    const confirmValidation = async () => {
+        try {
+            const projetId = selectedProjet.id || selectedProjet._id;
+            const response = await axiosInstance.post(`/recap/budget/valider/chef/${projetId}/`, {
+                action: 'reserver',
+                commentaire: validationComment || ""
+            });
+            
+            if (response.data.success) {
+                setSuccessMessage(response.data.message);
+                setShowSuccess(true);
+                await fetchProjets(false);
+                await loadAllCounts();
+                setTimeout(() => setShowSuccess(false), 3000);
+            }
+        } catch (err) {
+            console.error("Erreur réservation:", err);
+            alert(err.response?.data?.error || "Erreur lors de la réservation");
+        }
+        setShowValidationModal(false);
+        setSelectedProjet(null);
+    };
+
+    // Composant ValidationActions
+   // Version avec coins arrondis (rounded-full)
+const ValidationActions = ({ projet }) => {
+    const canPreApprouve = projet.statut_final === 'valide_directeur_region' || 
+                           projet.statut_final === 'valide_directeur_direction';
+    const canReserve = projet.statut_final === 'valide_directeur_region' || 
+                      projet.statut_final === 'valide_directeur_direction';
+    
+    if (!canPreApprouve && !canReserve) return null;
+    
+    return (
+        <div className="flex items-center gap-2">
+            <button
+                onClick={() => handlePreApprouve(projet)}
+                className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-medium hover:bg-green-600 transition whitespace-nowrap shadow-sm"
+            >
+                 Pré-approuver
+            </button>
+            <button
+                onClick={() => openValidationModal(projet, 'reserve')}
+                className="px-3 py-1 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition whitespace-nowrap shadow-sm"
+            >
+                 Réserver
+            </button>
+        </div>
+    );
+};
+
+    // Écran de chargement initial
+    if (initialLoading) {
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.bg}`} style={{ color: config.color }}>
-                {config.label}
-            </span>
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                <div className="bg-white rounded-2xl p-8 shadow-lg flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-[#FF8500] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-gray-600 font-medium">Chargement des projets...</p>
+                </div>
+            </div>
         );
-    };
+    }
 
-    const getBudgetTotal = (projet) => {
-        if (projet.cout_initial_total) {
-            return parseFloat(projet.cout_initial_total);
-        }
-        const prevTotal = (parseFloat(projet.prev_n_plus2_total) || 0) +
-                         (parseFloat(projet.prev_n_plus3_total) || 0) +
-                         (parseFloat(projet.prev_n_plus4_total) || 0) +
-                         (parseFloat(projet.prev_n_plus5_total) || 0);
-        const mensuelTotal = (parseFloat(projet.prev_n_plus1_total) || 0);
-        return prevTotal + mensuelTotal;
-    };
-
-    const getRegionNom = (regionId) => {
-        const region = regions.find(r => r._id === regionId);
-        return region?.nom_region || regionId || '-';
-    };
-
-    // Déterminer si la colonne Validation doit être affichée
-    const canShowValidationColumn = () => {
-        return activeTab === 'agentStatus' ;
-                // return activeTab === 'agentStatus' || activeTab === 'reserveChef';
-
-    };
+    // Fusion des régions et directions pour le filtre
+    const allEntites = [
+        ...regions.map(r => ({ _id: r.code_region || r._id, nom: r.nom_region, type: 'region' })),
+        ...directions.map(d => ({ _id: d.code_direction || d._id, nom: d.nom_direction, type: 'direction' }))
+    ];
 
     return (
         <>
             <ProjetsLayout
                 title="Tableau de bord - Chef"
-                subtitle="Gérez les projets validés par l'Agent, validez et suivez l'avancement"
+                subtitle="Pré-approuvez ou réservez les projets validés par les directeurs"
                 tabs={tabs}
                 projets={projets}
                 loading={loading}
@@ -234,65 +341,78 @@ const ProjetsChef = () => {
                 setSelectedType={setSelectedType}
                 selectedStatut={selectedStatut}
                 setSelectedStatut={setSelectedStatut}
-                selectedRegion={selectedRegion}
-                setSelectedRegion={setSelectedRegion}
-                regions={regions}
+                selectedRegion={selectedEntite}
+                setSelectedRegion={setSelectedEntite}
+                regions={allEntites}
                 counts={counts}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
-                canShowValidationActions={canShowValidationColumn()}
+                canShowValidationActions={activeTab === 'a_valider'}
                 getStatutBadge={getStatutBadge}
                 getBudgetTotal={getBudgetTotal}
-                getRegionNom={getRegionNom}
-                onViewDetails={(projet) => { 
-                    setSelectedProjet(projet); 
-                    setShowDetailsModal(true); 
-                }}
-                validationActions={(projet) => <ValidationActions projet={projet} onActionSuccess={handleSuccess} />}
-                showValidationColumn={canShowValidationColumn()}
+                getRegionNom={getEntiteNom}
+                onViewDetails={(projet) => { setSelectedProjet(projet); setShowDetailsModal(true); }}
+                onViewHistory={(projet) => { setSelectedProjet(projet); setShowHistoryModal(true); }}
+                validationActions={(projet) => <ValidationActions projet={projet} />}
+                showValidationColumn={true}
+                entiteType="mixte"
+                getEntiteNom={getEntiteNom}
             />
             
-            {/* Bouton Export Excel */}
-            <div className="fixed bottom-8 right-8 z-50">
-                <button
-                    onClick={handleExportExcel}
-                    disabled={exporting}
-                    className="px-5 py-2.5 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-md shadow-green-200 disabled:opacity-50"
-                >
-                    {exporting ? (
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                    ) : (
-                        <ExcelIcon />
-                    )}
-                    {exporting ? 'Export...' : 'Export Excel'}
-                </button>
-            </div>
-            
-            {/* Modal Détails du projet */}
             <DetailsProjetModal 
                 isOpen={showDetailsModal} 
-                onClose={() => { 
-                    setShowDetailsModal(false); 
-                    setSelectedProjet(null); 
-                }} 
+                onClose={() => { setShowDetailsModal(false); setSelectedProjet(null); }} 
                 projet={selectedProjet} 
                 axiosInstance={axiosInstance} 
             />
             
-            {/* Modal Historique des versions (optionnel) */}
             <HistoriqueVersionsModal 
                 isOpen={showHistoryModal} 
-                onClose={() => { 
-                    setShowHistoryModal(false); 
-                    setSelectedProjet(null); 
-                }} 
+                onClose={() => { setShowHistoryModal(false); setSelectedProjet(null); }} 
                 projet={selectedProjet} 
                 axiosInstance={axiosInstance} 
             />
-            
+
+            {/* Modal de validation (uniquement pour réserver) */}
+            {showValidationModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 w-[450px]">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">
+                            Réserver le projet
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Projet: <span className="font-semibold">{selectedProjet?.code_division}</span>
+                        </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Commentaire (optionnel)
+                            </label>
+                            <textarea
+                                value={validationComment}
+                                onChange={(e) => setValidationComment(e.target.value)}
+                                rows="3"
+                                className="w-full px-3 py-2 rounded-xl border border-gray-300 outline-none focus:border-orange-400"
+                                placeholder="Ajoutez un commentaire (optionnel)..."
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowValidationModal(false)}
+                                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={confirmValidation}
+                                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+                            >
+                                🔄 Réserver
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showSuccess && (
                 <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl z-50 text-sm">
                     ✅ {successMessage}
