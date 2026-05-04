@@ -22,14 +22,15 @@ function Login() {
         password: formData.password,
       });
 
-      const { access, refresh, role, nom_complet,photo_profil,region_id, structure_id ,region_name, structure_name ,direction_id,departement_id} = response.data;
+      const { access, refresh, role, nom_complet,photo_profil,region_id, structure_id ,region_name, structure_name ,direction_id,departement_id,user_id
+} = response.data;
 
       // Store tokens and user info
       localStorage.setItem('access_token', access);
       localStorage.setItem('refresh_token', refresh);
       localStorage.setItem('role', role); 
       localStorage.setItem('nom_complet',nom_complet);
-     
+      localStorage.setItem('user_id', response.data.user_id);
       localStorage.setItem('photo_profil', photo_profil || '');
     // Stocker region_id et structure_id
     if (region_id) localStorage.setItem('region_id', region_id);
