@@ -49,6 +49,7 @@ export const AdminLayout = () => {
   // Menu Projets
   const projectMenuItems = [
     { name: "Projets", icon: <ThemesIcon />, path: "/admin/projets" },
+    { name: "comparaison projet", icon: <ThemesIcon />, path: "/admin/comparison" },
     { name: "Recap", icon: <ThemesIcon />, path: "/admin/recap" },
     { name: "Classification", icon: <ClassificationIcon />, path: "/admin/classification" },
     { name: "Risque Analyse", icon: <RisqueIcon />, path: "/admin/risque" },
