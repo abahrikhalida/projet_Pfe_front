@@ -355,7 +355,10 @@ const ProjetsDirecteur = () => {
                 validationActions={(projet) => <ValidationActions projet={projet} />}
                 showValidationColumn={true}
                 entiteType="mixte"
+                entiteLabel="Entité"
+
                 getEntiteNom={getEntiteNom}
+
             />
             
             <DetailsProjetModal 

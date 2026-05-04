@@ -355,6 +355,8 @@ const ValidationActions = ({ projet }) => {
                 onViewHistory={(projet) => { setSelectedProjet(projet); setShowHistoryModal(true); }}
                 validationActions={(projet) => <ValidationActions projet={projet} />}
                 showValidationColumn={true}
+                entiteLabel="Entité"
+
                 entiteType="mixte"
                 getEntiteNom={getEntiteNom}
             />
