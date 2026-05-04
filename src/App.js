@@ -24,6 +24,7 @@ import  ProjetsAgent from "./Components/admin/Components/Projets/ProjetsAgent"
 import  ProjetsChef from "./Components/admin/Components/Projets/ProjetsChef"
 
 import RecapDashboard from "./Components/admin/Components/Recap/RecapDashboard"
+import Classification from "./Components/admin/Components/classification/Classification"
 import ProjetsDirecteur from "./Components/admin/Components/Projets/ProjetsDirecteur"
 import ProjetsDivisionnaire from "./Components/admin/Components/Projets/ProjetsDivisionnaire"
 import ProjetsAdmin from './Components/admin/Components/Projets/Projetsadmin';
@@ -31,6 +32,8 @@ import ProjetsResponsable from './Components/admin/Components/Projets/ProjetsRes
 import AffectationResponsableDepartement from './Components/admin/Components/DirecteurdeDirection/AffectationResponsableDepartemen';
 import ProjetsResponsableDepartement from './Components/admin/Components/projet-direction/ProjetsResponsableDepartement';
 import ProjetsDirecteurDirection from './Components/admin/Components/projet-direction/ProjetsDirecteurDirection';
+import ProjetChampsModifiables from './Components/admin/Components/Comparaison/ProjetChampsModifiables';
+// import ProjetVersionComparison from './Components/admin/Components/Comparaison/ComparisonProjet';
 
 
 
@@ -48,6 +51,7 @@ const router = createBrowserRouter([
     { index: true, element: <div>Dashboard admin</div> },
     { path: "dashboard",element:<div>Dashboard admin</div> },
     { path: "recap", element: <RecapDashboard/> },
+    { path: "classification", element: <Classification/> },
 
 
     // { path: "dashboard", element: <UsersAjout/> },
@@ -58,6 +62,9 @@ const router = createBrowserRouter([
         { path: "parametres", element: <Parametres /> },
     { path: "parametres-centraux", element: <ParametresCentral /> },
         {path: 'projets', element: <ProjetsAdmin />},
+        // {path: 'comparison', element: <ProjetVersionComparison />},
+        {path: 'comparison', element: <ProjetChampsModifiables/>},
+
 
     { path: "profile", element:<div>Dashboard Chef</div> },
     { path: "notifications", element:<div>Dashboard Chef</div> },
