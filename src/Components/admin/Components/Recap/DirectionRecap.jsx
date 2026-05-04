@@ -1,23 +1,13 @@
 
-import { useState, useEffect } from "react";
-import { axiosInstance } from "../../../../axios";
-import useFamilleRecap from "../../../../hooks/useFamilleRecap";
+import { useState } from "react";
+import useDirectionRecap from "../../../../hooks/useDirectionRecap";
 
 const currentYear = new Date().getFullYear();
 
 const fmt = (val) =>
   val != null ? Number(val).toLocaleString("fr-DZ") : "—";
 
-// Colonnes du tableau principal
-const baseColumns = [
-  { label: "Coût Global Initial", sub: `${currentYear + 1}/${currentYear + 5}`, key: "cout_initial_total" },
-  { label: "Réalisation Cumulée", sub: `${currentYear - 1}`, key: "realisation_cumul_n_mins1_total" },
-  { label: "Réalisation S1", sub: `${currentYear}`, key: "real_s1_n_total" },
-  { label: "Prévision S2", sub: `${currentYear}`, key: "prev_s2_n_total" },
-  { label: "Prévision Clôture", sub: `${currentYear}`, key: "prev_cloture_n_total" },
-];
-
-// Sections du modal (avec dont_dex)
+// Toutes les colonnes du modal (avec dont_dex)
 const modalSections = [
   {
     title: "Coûts & Réalisations",
@@ -52,7 +42,7 @@ const modalSections = [
     ],
   },
   {
-    title: `Détail Mensuel ${currentYear}`,
+    title: `Détail Prévisions ${currentYear}`,
     columns: [
       { label: "Janvier", sub: "", type: "total", key: "janvier_total" },
       { label: "Janvier", sub: "", type: "dont_dev", key: "janvier_dont_dex" },
@@ -82,10 +72,19 @@ const modalSections = [
   },
 ];
 
+// Colonnes du tableau principal
+const baseColumns = [
+  { label: "Coût Global Initial", sub: `${currentYear + 1}/${currentYear + 5}`, key: "cout_initial_total" },
+  { label: "Réalisation Cumulée", sub: `${currentYear - 1}`, key: "realisation_cumul_n_mins1_total" },
+  { label: "Réalisation S1", sub: `${currentYear}`, key: "real_s1_n_total" },
+  { label: "Prévision S2", sub: `${currentYear}`, key: "prev_s2_n_total" },
+  { label: "Prévision Clôture", sub: `${currentYear}`, key: "prev_cloture_n_total" },
+];
+
 // Modal Component
-const FamilleModal = ({ famille, onClose }) => {
-  if (!famille) return null;
-  const familleName = famille.famille_nom || famille.famille;
+const DirectionModal = ({ direction, onClose }) => {
+  if (!direction) return null;
+  const directionName = direction.direction_nom || direction.direction;
 
   return (
     <div
@@ -100,8 +99,8 @@ const FamilleModal = ({ famille, onClose }) => {
         {/* Modal Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-2xl flex justify-between items-center z-10">
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Détails — Famille</h3>
-            <p className="text-[#FF8500] font-semibold text-base">{familleName}</p>
+            <h3 className="text-lg font-bold text-gray-800">Détails — Direction</h3>
+            <p className="text-[#FF8500] font-semibold text-base">{directionName}</p>
           </div>
           <button
             onClick={onClose}
@@ -117,12 +116,15 @@ const FamilleModal = ({ famille, onClose }) => {
         <div className="px-6 py-5 space-y-6">
           {modalSections.map((section) => (
             <div key={section.title}>
+              {/* Section Title */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-5 bg-[#FF8500] rounded-full" />
                 <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                   {section.title}
                 </h4>
               </div>
+
+              {/* Cards grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {section.columns.map((col) => (
                   <div
@@ -138,7 +140,7 @@ const FamilleModal = ({ famille, onClose }) => {
                       </span>
                     </p>
                     <p className="text-sm font-semibold text-gray-800">
-                      {fmt(famille[col.key])}
+                      {fmt(direction[col.key])}
                     </p>
                   </div>
                 ))}
@@ -161,8 +163,8 @@ const FamilleModal = ({ famille, onClose }) => {
   );
 };
 
-// TotalFamillesModal Component
-const TotalFamillesModal = ({ totalData, onClose }) => {
+// TotalDirectionsModal Component
+const TotalDirectionsModal = ({ totalData, onClose }) => {
   if (!totalData) return null;
 
   return (
@@ -178,7 +180,7 @@ const TotalFamillesModal = ({ totalData, onClose }) => {
         {/* Modal Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-2xl flex justify-between items-center z-10">
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Détails — Total Familles</h3>
+            <h3 className="text-lg font-bold text-gray-800">Détails — Total Directions</h3>
             <p className="text-[#FF8500] font-semibold text-base">Récapitulatif général</p>
           </div>
           <button
@@ -195,12 +197,15 @@ const TotalFamillesModal = ({ totalData, onClose }) => {
         <div className="px-6 py-5 space-y-6">
           {modalSections.map((section) => (
             <div key={section.title}>
+              {/* Section Title */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-5 bg-[#FF8500] rounded-full" />
                 <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                   {section.title}
                 </h4>
               </div>
+
+              {/* Cards grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {section.columns.map((col) => (
                   <div
@@ -240,9 +245,9 @@ const TotalFamillesModal = ({ totalData, onClose }) => {
 };
 
 // Main Component
-const FamilleRecap = () => {
-  const { familles, totalDivision, loading, error } = useFamilleRecap();
-  const [selectedFamille, setSelectedFamille] = useState(null);
+const DirectionRecap = () => {
+  const { directions, totalDivision, loading, error } = useDirectionRecap();
+  const [selectedDirection, setSelectedDirection] = useState(null);
   const [showTotalModal, setShowTotalModal] = useState(false);
 
   if (loading)
@@ -264,8 +269,8 @@ const FamilleRecap = () => {
       <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6 font-kumbh">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">Détail par Famille</h2>
-          <span className="text-sm text-gray-500">{familles.length} familles</span>
+          <h2 className="text-xl font-semibold text-gray-800">Détail par Direction</h2>
+          <span className="text-sm text-gray-500">{directions.length} directions</span>
         </div>
 
         {/* Table */}
@@ -274,7 +279,7 @@ const FamilleRecap = () => {
             <thead>
               <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
                 <th className="w-[16%] py-2 px-4 text-left text-sm font-semibold text-[#4A4A4A] rounded-tl-lg">
-                  Famille
+                  Direction
                 </th>
                 {baseColumns.map((col) => (
                   <th key={col.key} className="w-[15%] py-2 px-4 text-center text-sm font-semibold text-[#4A4A4A]">
@@ -292,7 +297,7 @@ const FamilleRecap = () => {
             </thead>
 
             <tbody>
-              {familles.map((f, i) => (
+              {directions.map((d, i) => (
                 <tr
                   key={i}
                   className={`border-b border-gray-100 hover:bg-[#FFF9F0] transition-colors duration-150 ${
@@ -302,7 +307,7 @@ const FamilleRecap = () => {
                   <td className="py-1.5 px-4 align-middle">
                     <div className="flex items-center min-h-[32px]">
                       <span className="text-[#FF8500] text-sm font-medium text-left break-words whitespace-normal">
-                        {f.famille_nom || f.famille}
+                        {d.direction_nom || d.direction}
                       </span>
                     </div>
                   </td>
@@ -310,14 +315,14 @@ const FamilleRecap = () => {
                   {baseColumns.map((col) => (
                     <td key={col.key} className="py-1.5 px-4 align-middle text-center">
                       <div className="flex items-center justify-center min-h-[32px] text-sm text-gray-800">
-                        {fmt(f[col.key])}
+                        {fmt(d[col.key])}
                       </div>
                     </td>
                   ))}
 
                   <td className="py-1.5 px-2 align-middle text-center">
                     <button
-                      onClick={() => setSelectedFamille(f)}
+                      onClick={() => setSelectedDirection(d)}
                       className="inline-flex items-center justify-center w-7 h-7 text-[#FF8500] hover:bg-[#FFF4E8] rounded-full transition-colors duration-150"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,7 +338,7 @@ const FamilleRecap = () => {
               <tr className="border-t-2 border-[#FF8500]/30 bg-[#FFF9F0]">
                 <td className="py-1.5 px-4 align-middle">
                   <div className="flex items-center min-h-[32px]">
-                    <span className="text-[#FF8500] text-sm font-semibold">Total Familles</span>
+                    <span className="text-[#FF8500] text-sm font-semibold">Total Directions</span>
                   </div>
                 </td>
                 {baseColumns.map((col) => (
@@ -357,27 +362,27 @@ const FamilleRecap = () => {
             </tfoot>
           </table>
 
-          {familles.length === 0 && (
+          {directions.length === 0 && (
             <div className="text-center py-12 px-4">
               <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
                   d="M9 20l-5.447-2.724A2 2 0 013 15.382V6.618a2 2 0 011.553-1.894l6-2a2 2 0 011.894 0l6 2A2 2 0 0119 6.618v8.764a2 2 0 01-1.447 1.894L15 18.5" />
               </svg>
-              <p className="text-gray-500 text-lg">Aucune famille trouvée</p>
+              <p className="text-gray-500 text-lg">Aucune direction trouvée</p>
             </div>
           )}
         </div>
       </div>
 
-      {selectedFamille && (
-        <FamilleModal
-          famille={selectedFamille}
-          onClose={() => setSelectedFamille(null)}
+      {selectedDirection && (
+        <DirectionModal
+          direction={selectedDirection}
+          onClose={() => setSelectedDirection(null)}
         />
       )}
 
       {showTotalModal && (
-        <TotalFamillesModal
+        <TotalDirectionsModal
           totalData={totalDivision}
           onClose={() => setShowTotalModal(false)}
         />
@@ -386,4 +391,4 @@ const FamilleRecap = () => {
   );
 };
 
-export default FamilleRecap;
+export default DirectionRecap;
