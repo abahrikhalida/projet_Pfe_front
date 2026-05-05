@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 const ModifierStructure = ({ structure, onCancel, onSuccess, axiosInstance, regions }) => {
     const [formData, setFormData] = useState({
-        type_structure: structure.type_structure || '',
+        // type_structure: structure.type_structure || '',
         nom_structure: structure.nom_structure || '',
         description: structure.description || ''
     });
@@ -76,7 +76,7 @@ const ModifierStructure = ({ structure, onCancel, onSuccess, axiosInstance, regi
                     </div>
 
                     {/* Type de structure */}
-                    <div>
+                    {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
                             Type de structure <span className="text-red-500">*</span>
                         </label>
@@ -94,7 +94,7 @@ const ModifierStructure = ({ structure, onCancel, onSuccess, axiosInstance, regi
                                 </option>
                             ))}
                         </select>
-                    </div>
+                    </div> */}
 
                     {/* Nom structure */}
                     <div>
@@ -113,7 +113,7 @@ const ModifierStructure = ({ structure, onCancel, onSuccess, axiosInstance, regi
                     </div>
 
                     {/* Description */}
-                    <div>
+                    {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
                             Description
                         </label>
@@ -125,7 +125,7 @@ const ModifierStructure = ({ structure, onCancel, onSuccess, axiosInstance, regi
                             className="w-full px-3 py-2 rounded-[20px] border border-gray-300 focus:border-[#FF8500] focus:ring-1 focus:ring-[#FF8500] outline-none resize-none text-left"
                             placeholder="Description de la structure (optionnelle)..."
                         />
-                    </div>
+                    </div> */}
 
                     {/* Boutons d'action */}
                     <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">

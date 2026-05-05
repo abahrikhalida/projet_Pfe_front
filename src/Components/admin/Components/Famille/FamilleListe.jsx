@@ -110,7 +110,7 @@ const FamilleListe = ({ isReadOnly = false }) => {
                     <thead>
                         <tr className="bg-gradient-to-r from-[#F9F9F9] to-[#F0F0F0] border-b border-[#E4E4E4]">
                             <th className="py-3 px-6 text-left text-sm font-semibold text-[#4A4A4A] rounded-tl-lg w-[20%]">Code</th>
-                            <th className="py-3 px-6 text-left text-sm font-semibold text-[#4A4A4A] w-[55%]">Nom</th>
+                            <th className="py-3 px-6 text-left text-sm font-semibold text-[#4A4A4A] w-[55%]">Famille</th>
                             <th className="py-3 px-6 text-center text-sm font-semibold text-[#4A4A4A] rounded-tr-lg w-[25%]">Actions</th>
                         </tr>
                     </thead>
