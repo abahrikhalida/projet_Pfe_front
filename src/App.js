@@ -22,18 +22,15 @@ import ProjetsChef from "./Components/admin/Components/Projets/ProjetsChef";
 import RecapDashboard from "./Components/admin/Components/Recap/RecapDashboard";
 import ProjetsDirecteur from "./Components/admin/Components/Projets/ProjetsDirecteur";
 import ProjetsDivisionnaire from "./Components/admin/Components/Projets/ProjetsDivisionnaire";
-import {AdminLayout} from './Layouts/AdminLayout';
-import UsersListe from "./Components/admin/Components/utilisateurs/UsersListe"
-import UsersAjout from "./Components/admin/Components/utilisateurs/AjouterUtilisateurModal"
-import Affectation from "./Components/admin/Components/Affectations"
-import  ProjetsDirecteurRegion from "./Components/admin/Components/Projets/ProjetsDirecteurRegion"
-import  ProjetsAgent from "./Components/admin/Components/Projets/ProjetsAgent"
-import  ProjetsChef from "./Components/admin/Components/Projets/ProjetsChef"
 
-import RecapDashboard from "./Components/admin/Components/Recap/RecapDashboard"
-import Classification from "./Components/admin/Components/classification/Classification"
-import ProjetsDirecteur from "./Components/admin/Components/Projets/ProjetsDirecteur"
-import ProjetsDivisionnaire from "./Components/admin/Components/Projets/ProjetsDivisionnaire"
+
+
+
+
+
+import Classification from "./Components/admin/Components/classification/Classification";
+
+
 import ProjetsAdmin from './Components/admin/Components/Projets/Projetsadmin';
 import ProjetsResponsable from './Components/admin/Components/Projets/ProjetsResponsable';
 import AffectationResponsableDepartement from './Components/admin/Components/DirecteurdeDirection/AffectationResponsableDepartemen';
@@ -70,34 +67,36 @@ const router = createBrowserRouter([
       { path: "profile", element: <div>Profile</div> },
       // 🔥 Route notifications pour admin
       { path: "notification", element: <NotificationsPage /> },
+      { path: "classification", element: <Classification/> },
+       {path: 'comparison', element: <ProjetChampsModifiables/>},
     ]
   },
-    {
-  path: "/admin",
-  element: <AdminLayout />,
-  children: [
-    { index: true, element: <div>Dashboard admin</div> },
-    { path: "dashboard",element:<div>Dashboard admin</div> },
-    { path: "recap", element: <RecapDashboard/> },
-    { path: "classification", element: <Classification/> },
+//     {
+//   path: "/admin",
+//   element: <AdminLayout />,
+//   children: [
+//     { index: true, element: <div>Dashboard admin</div> },
+//     { path: "dashboard",element:<div>Dashboard admin</div> },
+//     { path: "recap", element: <RecapDashboard/> },
+//     { path: "classification", element: <Classification/> },
 
 
-    // { path: "dashboard", element: <UsersAjout/> },
-    { path: "utilisateurs", element:<UsersListe/> },
-    { path: "affectation", element: <Affectation/> },
-    // { path: "structures", element: <div>Dashboard Chef</div> },
+//     // { path: "dashboard", element: <UsersAjout/> },
+//     { path: "utilisateurs", element:<UsersListe/> },
+//     { path: "affectation", element: <Affectation/> },
+//     // { path: "structures", element: <div>Dashboard Chef</div> },
  
-        { path: "parametres", element: <Parametres /> },
-    { path: "parametres-centraux", element: <ParametresCentral /> },
-        {path: 'projets', element: <ProjetsAdmin />},
-        // {path: 'comparison', element: <ProjetVersionComparison />},
-        {path: 'comparison', element: <ProjetChampsModifiables/>},
+//         { path: "parametres", element: <Parametres /> },
+//     { path: "parametres-centraux", element: <ParametresCentral /> },
+//         {path: 'projets', element: <ProjetsAdmin />},
+//         // {path: 'comparison', element: <ProjetVersionComparison />},
+//         {path: 'comparison', element: <ProjetChampsModifiables/>},
 
 
-    { path: "profile", element:<div>Dashboard Chef</div> },
-    { path: "notifications", element:<div>Dashboard Chef</div> },
-  ]
-},
+//     { path: "profile", element:<div>Dashboard Chef</div> },
+//     { path: "notifications", element:<div>Dashboard Chef</div> },
+//   ]
+// },
   {
     path: '/chef',
     element: <ChefLayout />,
