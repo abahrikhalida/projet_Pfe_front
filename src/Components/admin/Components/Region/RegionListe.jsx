@@ -328,7 +328,7 @@ const UpdateRegion = ({ region, onCancel, onSuccess, axiosInstance }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nom <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Region <span className="text-red-500">*</span></label>
                         <input type="text" name="nom_region" value={formData.nom_region} onChange={handleInputChange} required className="w-full h-10 px-3 rounded-[20px] border border-gray-300 focus:border-[#FF8500] outline-none" />
                     </div>
 
