@@ -331,19 +331,748 @@
 
 // export default ProjetsResponsable;
 // Components/Projets/ProjetsResponsable.jsx
-import React, { useState, useEffect } from 'react';
+// import React, { useState, useEffect } from 'react';
+// import { axiosInstance } from '../../../../axios';
+// import ProjetsLayout from './ProjetsLayout';
+// import DetailsProjetModal from './DetailsProjetModal';
+// import HistoriqueVersionsModal from './HistoriqueVersionsModal';
+// import AjouterProjetModal from './AjouterProjetModal';
+// import ModifierProjetModal from '../projet-direction/ModifierProjetModal'; // 🔥 Ajouter ce modal
+// import { useDataFilter } from '../../Components/comon/DataFilter';
+
+// const ProjetsResponsable = () => {
+//     const [activeTab, setActiveTab] = useState('soumis');
+//     const [projets, setProjets] = useState([]);
+//     const [loading, setLoading] = useState(false);
+//     const [searchTerm, setSearchTerm] = useState('');
+//     const [selectedType, setSelectedType] = useState('tous');
+//     const [selectedStatut, setSelectedStatut] = useState('tous');
+//     const [selectedRegion, setSelectedRegion] = useState('');
+//     const [regions, setRegions] = useState([]);
+//     const [showDetailsModal, setShowDetailsModal] = useState(false);
+//     const [showHistoryModal, setShowHistoryModal] = useState(false);
+//     const [showEditModal, setShowEditModal] = useState(false); // 🔥 AJOUTER CET ÉTAT
+//     const [selectedProjet, setSelectedProjet] = useState(null);
+//     const [showSuccess, setShowSuccess] = useState(false);
+//     const [successMessage, setSuccessMessage] = useState('');
+//     const [modalKey, setModalKey] = useState(0);
+//     const [showCreateModal, setShowCreateModal] = useState(false);
+//     const [counts, setCounts] = useState({});
+//     const [userIds, setUserIds] = useState({
+//         region_id: null,
+//         structure_id: null
+//     });
+
+//     const { getUserInfo } = useDataFilter();
+//     const userInfo = getUserInfo();
+
+//     // 🔥 Récupérer les IDs depuis localStorage
+//     useEffect(() => {
+//         const regionId = localStorage.getItem('region_id');
+//         const structureId = localStorage.getItem('structure_id');
+        
+//         setUserIds({
+//             region_id: regionId,
+//             structure_id: structureId
+//         });
+        
+//         console.log("👤 IDs utilisateur région:", { regionId, structureId });
+//     }, []);
+
+//     const tabs = [
+//         { id: 'soumis', label: '📋 Soumis', endpoint: '/recap/budget/projets/responsable/?statut_workflow=soumis', color: 'blue', description: 'Projets soumis pour validation', icon: '📋' },
+//     ];
+
+//     useEffect(() => {
+//         fetchRegions();
+//     }, []);
+
+//     useEffect(() => {
+//         if (activeTab) {
+//             fetchProjets();
+//         }
+//     }, [activeTab, searchTerm, selectedType, selectedRegion]);
+
+//     const fetchRegions = async () => {
+//         try {
+//             const response = await axiosInstance.get('/params/regions');
+//             setRegions(response.data.data || []);
+//         } catch (err) {
+//             console.error("Erreur:", err);
+//         }
+//     };
+
+//     const fetchProjets = async () => {
+//         setLoading(true);
+//         try {
+//             const currentTab = tabs.find(t => t.id === activeTab);
+//             if (!currentTab) {
+//                 console.error("Tab non trouvé:", activeTab);
+//                 setProjets([]);
+//                 setLoading(false);
+//                 return;
+//             }
+            
+//             let url = currentTab.endpoint;
+//             const params = new URLSearchParams();
+            
+//             // 🔥 Ajouter les IDs utilisateur
+//             if (userIds.region_id) {
+//                 params.append('region_id', userIds.region_id);
+//             }
+//             if (userIds.structure_id) {
+//                 params.append('structure_id', userIds.structure_id);
+//             }
+            
+//             // Filtres
+//             if (searchTerm) {
+//                 params.append('code_division', searchTerm);
+//             }
+//             if (selectedType !== 'tous') {
+//                 params.append('type_projet', selectedType);
+//             }
+//             if (selectedRegion) {
+//                 params.append('region_filter', selectedRegion);
+//             }
+            
+//             if (params.toString()) {
+//                 url += `&${params.toString()}`;
+//             }
+            
+//             console.log("🔍 Fetching projets avec URL:", url);
+//             const response = await axiosInstance.get(url);
+            
+//             let projetsData = [];
+//             if (response.data?.projets) projetsData = response.data.projets;
+//             else if (response.data?.data) projetsData = response.data.data;
+//             else if (Array.isArray(response.data)) projetsData = response.data;
+            
+//             setProjets(projetsData);
+//             updateCounts();
+//         } catch (err) {
+//             console.error("Erreur fetchProjets:", err);
+//             setProjets([]);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const updateCounts = async () => {
+//         const newCounts = {};
+//         for (const tab of tabs) {
+//             try {
+//                 let url = tab.endpoint;
+//                 const params = new URLSearchParams();
+                
+//                 if (userIds.region_id) params.append('region_id', userIds.region_id);
+//                 if (userIds.structure_id) params.append('structure_id', userIds.structure_id);
+                
+//                 if (params.toString()) {
+//                     url += `&${params.toString()}`;
+//                 }
+                
+//                 const response = await axiosInstance.get(url);
+//                 let count = 0;
+//                 if (response.data?.projets) count = response.data.projets.length;
+//                 else if (response.data?.data) count = response.data.data.length;
+//                 else if (Array.isArray(response.data)) count = response.data.length;
+//                 newCounts[tab.id] = count;
+//             } catch (err) {
+//                 newCounts[tab.id] = 0;
+//             }
+//         }
+//         setCounts(newCounts);
+//     };
+
+//     const handleSuccess = (message) => {
+//         setSuccessMessage(message);
+//         setShowSuccess(true);
+//         fetchProjets();
+//         setTimeout(() => setShowSuccess(false), 3000);
+//     };
+
+//     const handleOpenModal = (projet = null) => {
+//         if (!projet) {
+//             setSelectedProjet(null);
+//             setModalKey(prev => prev + 1);
+//             setShowCreateModal(true);
+//         }
+//     };
+
+//     const getStatutBadge = (projet) => {
+//         const statut = projet.statut_workflow || projet.statut_final || 'brouillon';
+//         const config = {
+//             brouillon: { label: 'Brouillon', color: '#9CA3AF', bg: 'bg-gray-100' },
+//             soumis: { label: 'Soumis', color: '#3B82F6', bg: 'bg-blue-100' },
+//             pre_approuve_chef: { label: 'Pré-approuvé Chef', color: '#8B5CF6', bg: 'bg-purple-100' },
+//             reserve_chef: { label: 'Réservé Chef', color: '#F59E0B', bg: 'bg-amber-100' },
+//             reserve_directeur: { label: 'Réservé Directeur', color: '#F59E0B', bg: 'bg-amber-100' },
+//             approuve_directeur: { label: 'Approuvé Directeur', color: '#10B981', bg: 'bg-green-100' },
+//             valide_divisionnaire: { label: 'Validé', color: '#10B981', bg: 'bg-green-100' },
+//             rejete_divisionnaire: { label: 'Rejeté', color: '#EF4444', bg: 'bg-red-100' },
+//             annule_divisionnaire: { label: 'Annulé', color: '#6B7280', bg: 'bg-gray-100' },
+//             termine_divisionnaire: { label: 'Terminé', color: '#14B8A6', bg: 'bg-teal-100' }
+//         };
+//         const c = config[statut] || { label: statut, color: '#6B7280', bg: 'bg-gray-100' };
+//         return <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.bg}`} style={{ color: c.color }}>{c.label}</span>;
+//     };
+
+//     const getBudgetTotal = (projet) => {
+//         if (projet.cout_initial_total) return parseFloat(projet.cout_initial_total);
+//         const prev = (parseFloat(projet.prev_n_plus2_total) || 0) + (parseFloat(projet.prev_n_plus3_total) || 0) + (parseFloat(projet.prev_n_plus4_total) || 0) + (parseFloat(projet.prev_n_plus5_total) || 0);
+//         const mensuel = parseFloat(projet.prev_n_plus1_total) || 0;
+//         return prev + mensuel;
+//     };
+
+//     const getRegionNom = (regionId) => {
+//         if (!regionId) return '-';
+//         const region = regions.find(r => r._id === regionId || r.code_region === regionId);
+//         return region?.nom_region || regionId;
+//     };
+
+//     // 🔥 Déterminer si le projet peut être modifié (statut = 'soumis')
+//     const canEdit = (projet) => {
+//         const projetStatut = projet.statut_workflow || projet.statut;
+//         return projetStatut === 'soumis';
+//     };
+
+//     // 🔥 Actions pour responsable structure
+//     const ResponsableActions = ({ projet }) => {
+//         const projetId = projet._id || projet.id;
+//         const showEdit = canEdit(projet);
+        
+//         return (
+//             <div className="flex items-center gap-2">
+//                 <button 
+//                     onClick={() => { 
+//                         setSelectedProjet(projet); 
+//                         setShowHistoryModal(true); 
+//                     }} 
+//                     className="p-1.5 hover:bg-blue-50 rounded-full transition" 
+//                     title="Historique"
+//                 >
+//                     <svg className="w-4 h-4 text-gray-500 hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                     </svg>
+//                 </button>
+//                 <button 
+//                     onClick={() => { 
+//                         console.log("👁️ Détails projet:", projet);
+//                         console.log("🆔 ID du projet (MongoDB):", projetId);
+//                         const projetAvecId = { ...projet, id: projetId };
+//                         setSelectedProjet(projetAvecId); 
+//                         setShowDetailsModal(true); 
+//                     }} 
+//                     className="p-1.5 hover:bg-green-50 rounded-full transition" 
+//                     title="Consulter"
+//                 >
+//                     <svg className="w-4 h-4 text-gray-500 hover:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+//                     </svg>
+//                 </button>
+//                 {/* 🔥 Bouton Modifier - visible seulement si statut = 'soumis' */}
+//                 {showEdit && (
+//                     <button 
+//                         onClick={() => { 
+//                             console.log("✏️ Modification projet:", projet);
+//                             setSelectedProjet(projet); 
+//                             setShowEditModal(true); 
+//                         }} 
+//                         className="p-1.5 hover:bg-[#FF8500]/10 rounded-full transition" 
+//                         title="Modifier le projet (statut: soumis)"
+//                     >
+//                         <svg className="w-4 h-4 text-gray-500 hover:text-[#FF8500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+//                         </svg>
+//                     </button>
+//                 )}
+//             </div>
+//         );
+//     };
+
+//     return (
+//         <>
+//             <ProjetsLayout
+//                 title="Tableau de bord - Responsable Structure"
+//                 subtitle="Créez et gérez vos projets, suivez leur avancement"
+//                 tabs={tabs}
+//                 projets={projets}
+//                 loading={loading}
+//                 searchTerm={searchTerm}
+//                 setSearchTerm={setSearchTerm}
+//                 selectedType={selectedType}
+//                 setSelectedType={setSelectedType}
+//                 selectedStatut={selectedStatut}
+//                 setSelectedStatut={setSelectedStatut}
+//                 selectedRegion={selectedRegion}
+//                 setSelectedRegion={setSelectedRegion}
+//                 regions={regions}
+//                 counts={counts}
+//                 activeTab={activeTab}
+//                 setActiveTab={setActiveTab}
+//                 canShowValidationActions={false}
+//                 getStatutBadge={getStatutBadge}
+//                 getBudgetTotal={getBudgetTotal}
+//                 getRegionNom={getRegionNom}
+//                 userRole="responsable_structure"
+//                 onViewDetails={(projet) => {
+//                     setSelectedProjet(projet);
+//                     setShowDetailsModal(true);
+//                 }}
+//                 onEditProjet={(projet) => {
+//                     setSelectedProjet(projet);
+//                     setShowEditModal(true);
+//                 }}
+//                 validationActions={(projet) => <ResponsableActions projet={projet} />}
+//                 showValidationColumn={false}
+//                 entiteType="region"
+//                 getEntiteNom={(projet) => getRegionNom(projet.region_id || projet.region)}
+//             />
+            
+//             {/* Bouton Ajouter Projet - visible pour responsable */}
+//             <div className="fixed bottom-8 right-8 z-50">
+//                 <button
+//                     onClick={() => handleOpenModal(null)}
+//                     className="px-5 py-2.5 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition-all duration-200 flex items-center gap-2 shadow-md shadow-orange-200"
+//                 >
+//                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+//                         <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+//                     </svg>
+//                     Nouveau Projet
+//                 </button>
+//             </div>
+            
+//             {/* Modal de création */}
+//             <AjouterProjetModal
+//                 key={modalKey}
+//                 isOpen={showCreateModal}
+//                 onClose={() => { setShowCreateModal(false); setSelectedProjet(null); }}
+//                 onSuccess={handleSuccess}
+//                 projet={null}
+//                 axiosInstance={axiosInstance}
+//             />
+            
+//             {/* 🔥 Modal de modification - AJOUTER CETTE MODALE */}
+//             <ModifierProjetModal
+//                 key={`edit-${modalKey}`}
+//                 isOpen={showEditModal}
+//                 onClose={() => { setShowEditModal(false); setSelectedProjet(null); }}
+//                 onSuccess={handleSuccess}
+//                 projet={selectedProjet}
+//                 axiosInstance={axiosInstance}
+//                 userRole="responsable_structure"
+//             />
+            
+//             <DetailsProjetModal 
+//                 isOpen={showDetailsModal} 
+//                 onClose={() => { setShowDetailsModal(false); setSelectedProjet(null); }} 
+//                 projet={selectedProjet} 
+//                 axiosInstance={axiosInstance} 
+//             />
+            
+//             <HistoriqueVersionsModal 
+//                 isOpen={showHistoryModal} 
+//                 onClose={() => { setShowHistoryModal(false); setSelectedProjet(null); }} 
+//                 projet={selectedProjet} 
+//                 axiosInstance={axiosInstance} 
+//             />
+            
+//             {showSuccess && (
+//                 <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl z-50 text-sm">
+//                     ✅ {successMessage}
+//                 </div>
+//             )}
+//         </>
+//     );
+// };
+
+// export default ProjetsResponsable;
+// Components/Projets/ProjetsResponsable.jsx
+// import React, { useState, useEffect } from 'react';
+// import { axiosInstance } from '../../../../axios';
+// import ProjetsLayout from './ProjetsLayout';
+// import DetailsProjetModal from './DetailsProjetModal';
+// import HistoriqueVersionsModal from './HistoriqueVersionsModal';
+// import AjouterProjetModal from './AjouterProjetModal';
+// import ModifierProjetModal from '../projet-direction/ModifierProjetModal';
+// import { useDataFilter } from '../../Components/comon/DataFilter';
+
+// const ProjetsResponsable = () => {
+//     const [activeTab, setActiveTab] = useState('soumis');
+//     const [projets, setProjets] = useState([]);
+//     const [loading, setLoading] = useState(false);
+//     const [searchTerm, setSearchTerm] = useState('');
+//     const [selectedType, setSelectedType] = useState('tous');
+//     const [selectedStatut, setSelectedStatut] = useState('tous');
+//     const [selectedRegion, setSelectedRegion] = useState('');
+//     const [regions, setRegions] = useState([]);
+//     const [showDetailsModal, setShowDetailsModal] = useState(false);
+//     const [showHistoryModal, setShowHistoryModal] = useState(false);
+//     const [showEditModal, setShowEditModal] = useState(false);
+//     const [selectedProjet, setSelectedProjet] = useState(null);
+//     const [showSuccess, setShowSuccess] = useState(false);
+//     const [successMessage, setSuccessMessage] = useState('');
+//     const [modalKey, setModalKey] = useState(0);
+//     const [showCreateModal, setShowCreateModal] = useState(false);
+//     const [counts, setCounts] = useState({});
+//     const [userIds, setUserIds] = useState({
+//         region_id: null,
+//         structure_id: null
+//     });
+
+//     const { getUserInfo } = useDataFilter();
+//     const userInfo = getUserInfo();
+
+//     // Récupérer les IDs depuis localStorage
+//     useEffect(() => {
+//         const regionId = localStorage.getItem('region_id');
+//         const structureId = localStorage.getItem('structure_id');
+        
+//         setUserIds({
+//             region_id: regionId,
+//             structure_id: structureId
+//         });
+        
+//         console.log("👤 IDs utilisateur région:", { regionId, structureId });
+//     }, []);
+
+//     const tabs = [
+//         { 
+//             id: 'soumis', 
+//             label: '📋 Soumis', 
+//             endpoint: '/recap/budget/projets/responsable/?statut_workflow=soumis', 
+//             color: 'blue', 
+//             description: 'Projets soumis pour validation', 
+//             icon: '📋' 
+//         },
+//     ];
+
+//     useEffect(() => {
+//         fetchRegions();
+//     }, []);
+
+//     useEffect(() => {
+//         if (activeTab) {
+//             fetchProjets();
+//         }
+//     }, [activeTab, searchTerm, selectedType, selectedRegion]);
+
+//     const fetchRegions = async () => {
+//         try {
+//             const response = await axiosInstance.get('/params/regions');
+//             setRegions(response.data.data || []);
+//         } catch (err) {
+//             console.error("Erreur fetchRegions:", err);
+//         }
+//     };
+
+//     const fetchProjets = async () => {
+//         setLoading(true);
+//         try {
+//             const currentTab = tabs.find(t => t.id === activeTab);
+//             if (!currentTab) {
+//                 console.error("Tab non trouvé:", activeTab);
+//                 setProjets([]);
+//                 setLoading(false);
+//                 return;
+//             }
+            
+//             let url = currentTab.endpoint;
+//             const params = new URLSearchParams();
+            
+//             // Ajouter les IDs utilisateur
+//             if (userIds.region_id) {
+//                 params.append('region_id', userIds.region_id);
+//             }
+//             if (userIds.structure_id) {
+//                 params.append('structure_id', userIds.structure_id);
+//             }
+            
+//             // Filtres
+//             if (searchTerm) {
+//                 params.append('code_division', searchTerm);
+//             }
+//             if (selectedType !== 'tous') {
+//                 params.append('type_projet', selectedType);
+//             }
+//             if (selectedRegion) {
+//                 params.append('region_filter', selectedRegion);
+//             }
+            
+//             if (params.toString()) {
+//                 url += `&${params.toString()}`;
+//             }
+            
+//             console.log("🔍 Fetching projets avec URL:", url);
+//             const response = await axiosInstance.get(url);
+            
+//             let projetsData = [];
+//             if (response.data?.projets) projetsData = response.data.projets;
+//             else if (response.data?.data) projetsData = response.data.data;
+//             else if (Array.isArray(response.data)) projetsData = response.data;
+            
+//             setProjets(projetsData);
+//             updateCounts();
+//         } catch (err) {
+//             console.error("Erreur fetchProjets:", err);
+//             setProjets([]);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const updateCounts = async () => {
+//         const newCounts = {};
+//         for (const tab of tabs) {
+//             try {
+//                 let url = tab.endpoint;
+//                 const params = new URLSearchParams();
+                
+//                 if (userIds.region_id) params.append('region_id', userIds.region_id);
+//                 if (userIds.structure_id) params.append('structure_id', userIds.structure_id);
+                
+//                 if (params.toString()) {
+//                     url += `&${params.toString()}`;
+//                 }
+                
+//                 const response = await axiosInstance.get(url);
+//                 let count = 0;
+//                 if (response.data?.projets) count = response.data.projets.length;
+//                 else if (response.data?.data) count = response.data.data.length;
+//                 else if (Array.isArray(response.data)) count = response.data.length;
+//                 newCounts[tab.id] = count;
+//             } catch (err) {
+//                 newCounts[tab.id] = 0;
+//             }
+//         }
+//         setCounts(newCounts);
+//     };
+
+//     const handleSuccess = (message) => {
+//         setSuccessMessage(message);
+//         setShowSuccess(true);
+//         fetchProjets();
+//         setTimeout(() => setShowSuccess(false), 3000);
+//     };
+
+//     const handleOpenModal = (projet = null) => {
+//         if (!projet) {
+//             setSelectedProjet(null);
+//             setModalKey(prev => prev + 1);
+//             setShowCreateModal(true);
+//         }
+//     };
+
+//     const getStatutBadge = (projet) => {
+//         const statut = projet.statut_workflow || projet.statut_final || 'brouillon';
+//         const config = {
+//             brouillon: { label: 'Brouillon', color: '#9CA3AF', bg: 'bg-gray-100' },
+//             soumis: { label: 'Soumis', color: '#3B82F6', bg: 'bg-blue-100' },
+//             pre_approuve_chef: { label: 'Pré-approuvé Chef', color: '#8B5CF6', bg: 'bg-purple-100' },
+//             reserve_chef: { label: 'Réservé Chef', color: '#F59E0B', bg: 'bg-amber-100' },
+//             reserve_directeur: { label: 'Réservé Directeur', color: '#F59E0B', bg: 'bg-amber-100' },
+//             approuve_directeur: { label: 'Approuvé Directeur', color: '#10B981', bg: 'bg-green-100' },
+//             valide_divisionnaire: { label: 'Validé', color: '#10B981', bg: 'bg-green-100' },
+//             rejete_divisionnaire: { label: 'Rejeté', color: '#EF4444', bg: 'bg-red-100' },
+//             annule_divisionnaire: { label: 'Annulé', color: '#6B7280', bg: 'bg-gray-100' },
+//             termine_divisionnaire: { label: 'Terminé', color: '#14B8A6', bg: 'bg-teal-100' }
+//         };
+//         const c = config[statut] || { label: statut, color: '#6B7280', bg: 'bg-gray-100' };
+//         return <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.bg}`} style={{ color: c.color }}>{c.label}</span>;
+//     };
+
+//     const getBudgetTotal = (projet) => {
+//         if (projet.cout_initial_total) return parseFloat(projet.cout_initial_total);
+//         const prev = (parseFloat(projet.prev_n_plus2_total) || 0) + 
+//                      (parseFloat(projet.prev_n_plus3_total) || 0) + 
+//                      (parseFloat(projet.prev_n_plus4_total) || 0) + 
+//                      (parseFloat(projet.prev_n_plus5_total) || 0);
+//         const mensuel = parseFloat(projet.prev_n_plus1_total) || 0;
+//         return prev + mensuel;
+//     };
+
+//     const getRegionNom = (regionId) => {
+//         if (!regionId) return '-';
+//         const region = regions.find(r => r._id === regionId || r.code_region === regionId);
+//         return region?.nom_region || regionId;
+//     };
+
+//     // 🔥 Déterminer si le projet peut être modifié
+//     // Pour responsable structure: modifiable si statut = 'soumis' OU 'reserve_directeur_region'
+//     const canEdit = (projet) => {
+//         const projetStatut = projet.statut_workflow || projet.statut_final;
+//         // Permet la modification pour les projets soumis OU réservés par Directeur Région
+//         return projetStatut === 'soumis' || projetStatut === 'reserve_directeur_region';
+//     };
+
+//     // Actions pour responsable structure
+//     const ResponsableActions = ({ projet }) => {
+//         const projetId = projet._id || projet.id;
+//         const showEdit = canEdit(projet);
+        
+//         return (
+//             <div className="flex items-center gap-2">
+//                 <button 
+//                     onClick={() => { 
+//                         setSelectedProjet(projet); 
+//                         setShowHistoryModal(true); 
+//                     }} 
+//                     className="p-1.5 hover:bg-blue-50 rounded-full transition" 
+//                     title="Historique"
+//                 >
+//                     <svg className="w-4 h-4 text-gray-500 hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                     </svg>
+//                 </button>
+//                 <button 
+//                     onClick={() => { 
+//                         console.log("👁️ Détails projet:", projet);
+//                         console.log("🆔 ID du projet:", projetId);
+//                         const projetAvecId = { ...projet, id: projetId };
+//                         setSelectedProjet(projetAvecId); 
+//                         setShowDetailsModal(true); 
+//                     }} 
+//                     className="p-1.5 hover:bg-green-50 rounded-full transition" 
+//                     title="Consulter"
+//                 >
+//                     <svg className="w-4 h-4 text-gray-500 hover:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+//                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+//                     </svg>
+//                 </button>
+                
+//                 {/* 🔥 Bouton Modifier - visible si statut soumis ou reserve_directeur_region */}
+//                 {showEdit && (
+//                     <button 
+//                         onClick={() => { 
+//                             console.log("✏️ Modification projet:", projet);
+//                             setSelectedProjet(projet); 
+//                             setShowEditModal(true); 
+//                         }} 
+//                         className="p-1.5 hover:bg-[#FF8500]/10 rounded-full transition" 
+//                         title="Modifier le projet"
+//                     >
+//                         <svg className="w-4 h-4 text-gray-500 hover:text-[#FF8500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+//                         </svg>
+//                     </button>
+//                 )}
+//             </div>
+//         );
+//     };
+
+//     return (
+//         <>
+//             <ProjetsLayout
+//                 title="Tableau de bord - Responsable Structure"
+//                 subtitle="Créez et gérez vos projets, suivez leur avancement"
+//                 tabs={tabs}
+//                 projets={projets}
+//                 loading={loading}
+//                 searchTerm={searchTerm}
+//                 setSearchTerm={setSearchTerm}
+//                 selectedType={selectedType}
+//                 setSelectedType={setSelectedType}
+//                 selectedStatut={selectedStatut}
+//                 setSelectedStatut={setSelectedStatut}
+//                 selectedRegion={selectedRegion}
+//                 setSelectedRegion={setSelectedRegion}
+//                 regions={regions}
+//                 counts={counts}
+//                 activeTab={activeTab}
+//                 setActiveTab={setActiveTab}
+//                 canShowValidationActions={false}
+//                 getStatutBadge={getStatutBadge}
+//                 getBudgetTotal={getBudgetTotal}
+//                 getRegionNom={getRegionNom}
+//                 userRole="responsable_structure"
+//                 onViewDetails={(projet) => {
+//                     setSelectedProjet(projet);
+//                     setShowDetailsModal(true);
+//                 }}
+//                 onEditProjet={(projet) => {
+//                     setSelectedProjet(projet);
+//                     setShowEditModal(true);
+//                 }}
+//                 validationActions={(projet) => <ResponsableActions projet={projet} />}
+//                 showValidationColumn={false}
+//                 entiteType="region"
+//                 getEntiteNom={(projet) => getRegionNom(projet.region_id || projet.region)}
+//             />
+            
+//             {/* Bouton Ajouter Projet */}
+//             <div className="fixed bottom-8 right-8 z-50">
+//                 <button
+//                     onClick={() => handleOpenModal(null)}
+//                     className="px-5 py-2.5 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition-all duration-200 flex items-center gap-2 shadow-md shadow-orange-200"
+//                 >
+//                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+//                         <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+//                     </svg>
+//                     Nouveau Projet
+//                 </button>
+//             </div>
+            
+//             {/* Modal de création */}
+//             <AjouterProjetModal
+//                 key={modalKey}
+//                 isOpen={showCreateModal}
+//                 onClose={() => { setShowCreateModal(false); setSelectedProjet(null); }}
+//                 onSuccess={handleSuccess}
+//                 projet={null}
+//                 axiosInstance={axiosInstance}
+//             />
+            
+//             {/* Modal de modification */}
+//             <ModifierProjetModal
+//                 key={`edit-${modalKey}`}
+//                 isOpen={showEditModal}
+//                 onClose={() => { setShowEditModal(false); setSelectedProjet(null); }}
+//                 onSuccess={handleSuccess}
+//                 projet={selectedProjet}
+//                 axiosInstance={axiosInstance}
+//                 userRole="responsable_structure"
+//             />
+            
+//             <DetailsProjetModal 
+//                 isOpen={showDetailsModal} 
+//                 onClose={() => { setShowDetailsModal(false); setSelectedProjet(null); }} 
+//                 projet={selectedProjet} 
+//                 axiosInstance={axiosInstance} 
+//             />
+            
+//             <HistoriqueVersionsModal 
+//                 isOpen={showHistoryModal} 
+//                 onClose={() => { setShowHistoryModal(false); setSelectedProjet(null); }} 
+//                 projet={selectedProjet} 
+//                 axiosInstance={axiosInstance} 
+//             />
+            
+//             {showSuccess && (
+//                 <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl z-50 text-sm">
+//                     ✅ {successMessage}
+//                 </div>
+//             )}
+//         </>
+//     );
+// };
+
+// Components/Projets/ProjetsResponsable.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { axiosInstance } from '../../../../axios';
 import ProjetsLayout from './ProjetsLayout';
 import DetailsProjetModal from './DetailsProjetModal';
 import HistoriqueVersionsModal from './HistoriqueVersionsModal';
 import AjouterProjetModal from './AjouterProjetModal';
-import ModifierProjetModal from '../projet-direction/ModifierProjetModal'; // 🔥 Ajouter ce modal
+import ModifierProjetModal from '../projet-direction/ModifierProjetModal';
 import { useDataFilter } from '../../Components/comon/DataFilter';
 
 const ProjetsResponsable = () => {
     const [activeTab, setActiveTab] = useState('soumis');
     const [projets, setProjets] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('tous');
     const [selectedStatut, setSelectedStatut] = useState('tous');
@@ -351,36 +1080,66 @@ const ProjetsResponsable = () => {
     const [regions, setRegions] = useState([]);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false); // 🔥 AJOUTER CET ÉTAT
+    const [showEditModal, setShowEditModal] = useState(false);
     const [selectedProjet, setSelectedProjet] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [modalKey, setModalKey] = useState(0);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [counts, setCounts] = useState({});
-    const [userIds, setUserIds] = useState({
-        region_id: null,
-        structure_id: null
-    });
+    const [structureId, setStructureId] = useState(null);
+    
+    const isInitialMount = useRef(true);
+    const isFetching = useRef(false);
 
     const { getUserInfo } = useDataFilter();
     const userInfo = getUserInfo();
 
-    // 🔥 Récupérer les IDs depuis localStorage
+    // Récupérer structure_id depuis localStorage
     useEffect(() => {
-        const regionId = localStorage.getItem('region_id');
         const structureId = localStorage.getItem('structure_id');
-        
-        setUserIds({
-            region_id: regionId,
-            structure_id: structureId
-        });
-        
-        console.log("👤 IDs utilisateur région:", { regionId, structureId });
+        setStructureId(structureId);
+        console.log("👤 Structure ID:", structureId);
     }, []);
 
+    // 🔥 Tabs complets pour Responsable Structure
     const tabs = [
-        { id: 'soumis', label: '📋 Soumis', endpoint: '/recap/budget/projets/responsable/?statut_workflow=soumis', color: 'blue', description: 'Projets soumis pour validation', icon: '📋' },
+        { 
+            id: 'soumis', 
+            label: '📋 Soumis', 
+            endpoint: '/recap/budget/projets/responsable/', 
+            params: { statut_workflow: 'soumis' },
+            color: 'blue', 
+            description: 'Projets soumis - En attente de validation par le Directeur Région',
+            statutType: 'workflow'
+        },
+        { 
+            id: 'reserve_directeur_region', 
+            label: '🔄 Réservés DR', 
+            endpoint: '/recap/budget/projets/responsable/reserve-directeur-region/', 
+            params: {},
+            color: 'orange', 
+            description: 'Projets réservés par le Directeur Région - Modifiables',
+            statutType: 'final'
+        },
+        { 
+            id: 'valides', 
+            label: '✅ Validés DR', 
+            endpoint: '/recap/budget/projets/responsable/valide-directeur-region/', 
+            params: {},
+            color: 'green', 
+            description: 'Projets validés par le Directeur Région',
+            statutType: 'final'
+        },
+        { 
+            id: 'rejetes', 
+            label: '❌ Rejetés DR', 
+            endpoint: '/recap/budget/projets/responsable/rejete-directeur-region/', 
+            params: {},
+            color: 'red', 
+            description: 'Projets rejetés par le Directeur Région',
+            statutType: 'final'
+        }
     ];
 
     useEffect(() => {
@@ -388,43 +1147,60 @@ const ProjetsResponsable = () => {
     }, []);
 
     useEffect(() => {
-        if (activeTab) {
-            fetchProjets();
+        if (structureId && !isInitialMount.current) {
+            fetchProjets(false);
         }
-    }, [activeTab, searchTerm, selectedType, selectedRegion]);
+    }, [activeTab, searchTerm, selectedType, selectedRegion, structureId]);
+
+    // Chargement initial
+    useEffect(() => {
+        if (structureId && isInitialMount.current) {
+            isInitialMount.current = false;
+            fetchProjets(true);
+            loadAllCounts();
+        }
+    }, [structureId]);
 
     const fetchRegions = async () => {
         try {
             const response = await axiosInstance.get('/params/regions');
             setRegions(response.data.data || []);
         } catch (err) {
-            console.error("Erreur:", err);
+            console.error("Erreur fetchRegions:", err);
         }
     };
 
-    const fetchProjets = async () => {
-        setLoading(true);
+    const fetchProjets = async (isInitial = false) => {
+        if (isFetching.current) return;
+        
+        const currentTab = tabs.find(t => t.id === activeTab);
+        if (!currentTab) return;
+        
+        isFetching.current = true;
+        if (isInitial) {
+            setInitialLoading(true);
+        } else {
+            setLoading(true);
+        }
+        
         try {
-            const currentTab = tabs.find(t => t.id === activeTab);
-            if (!currentTab) {
-                console.error("Tab non trouvé:", activeTab);
-                setProjets([]);
-                setLoading(false);
-                return;
-            }
-            
             let url = currentTab.endpoint;
             const params = new URLSearchParams();
             
-            // 🔥 Ajouter les IDs utilisateur
-            if (userIds.region_id) {
-                params.append('region_id', userIds.region_id);
-            }
-            if (userIds.structure_id) {
-                params.append('structure_id', userIds.structure_id);
+            // 🔥 On n'envoie PAS region_id (le backend le connaît via request.user.region_id)
+            // On envoie seulement le structure_id pour filtrer les projets de la structure
+            if (structureId) {
+                params.append('structure_id', structureId);
             }
             
-            // Filtres
+            // Ajouter les paramètres spécifiques à l'onglet
+            if (currentTab.params) {
+                Object.entries(currentTab.params).forEach(([key, value]) => {
+                    params.append(key, value);
+                });
+            }
+            
+            // Filtres utilisateur
             if (searchTerm) {
                 params.append('code_division', searchTerm);
             }
@@ -436,10 +1212,10 @@ const ProjetsResponsable = () => {
             }
             
             if (params.toString()) {
-                url += `&${params.toString()}`;
+                url += `?${params.toString()}`;
             }
             
-            console.log("🔍 Fetching projets avec URL:", url);
+            console.log("🔍 Fetching projets:", url);
             const response = await axiosInstance.get(url);
             
             let projetsData = [];
@@ -448,27 +1224,39 @@ const ProjetsResponsable = () => {
             else if (Array.isArray(response.data)) projetsData = response.data;
             
             setProjets(projetsData);
-            updateCounts();
+            
         } catch (err) {
-            console.error("Erreur fetchProjets:", err);
+            console.error("❌ Erreur fetchProjets:", err);
             setProjets([]);
         } finally {
-            setLoading(false);
+            isFetching.current = false;
+            if (isInitial) {
+                setInitialLoading(false);
+            } else {
+                setLoading(false);
+            }
         }
     };
 
-    const updateCounts = async () => {
+    const loadAllCounts = async () => {
         const newCounts = {};
         for (const tab of tabs) {
             try {
                 let url = tab.endpoint;
                 const params = new URLSearchParams();
                 
-                if (userIds.region_id) params.append('region_id', userIds.region_id);
-                if (userIds.structure_id) params.append('structure_id', userIds.structure_id);
+                if (structureId) {
+                    params.append('structure_id', structureId);
+                }
+                
+                if (tab.params) {
+                    Object.entries(tab.params).forEach(([key, value]) => {
+                        params.append(key, value);
+                    });
+                }
                 
                 if (params.toString()) {
-                    url += `&${params.toString()}`;
+                    url += `?${params.toString()}`;
                 }
                 
                 const response = await axiosInstance.get(url);
@@ -487,7 +1275,8 @@ const ProjetsResponsable = () => {
     const handleSuccess = (message) => {
         setSuccessMessage(message);
         setShowSuccess(true);
-        fetchProjets();
+        fetchProjets(false);
+        loadAllCounts();
         setTimeout(() => setShowSuccess(false), 3000);
     };
 
@@ -500,26 +1289,39 @@ const ProjetsResponsable = () => {
     };
 
     const getStatutBadge = (projet) => {
-        const statut = projet.statut_workflow || projet.statut_final || 'brouillon';
+        const currentTab = tabs.find(t => t.id === activeTab);
+        let statut = '';
+        
+        if (currentTab?.statutType === 'workflow') {
+            statut = projet.statut_workflow || 'brouillon';
+        } else if (currentTab?.statutType === 'final') {
+            statut = projet.statut_final || 'brouillon';
+        } else {
+            statut = projet.statut_workflow || projet.statut_final || 'brouillon';
+        }
+        
         const config = {
             brouillon: { label: 'Brouillon', color: '#9CA3AF', bg: 'bg-gray-100' },
             soumis: { label: 'Soumis', color: '#3B82F6', bg: 'bg-blue-100' },
-            pre_approuve_chef: { label: 'Pré-approuvé Chef', color: '#8B5CF6', bg: 'bg-purple-100' },
-            reserve_chef: { label: 'Réservé Chef', color: '#F59E0B', bg: 'bg-amber-100' },
-            reserve_directeur: { label: 'Réservé Directeur', color: '#F59E0B', bg: 'bg-amber-100' },
-            approuve_directeur: { label: 'Approuvé Directeur', color: '#10B981', bg: 'bg-green-100' },
-            valide_divisionnaire: { label: 'Validé', color: '#10B981', bg: 'bg-green-100' },
-            rejete_divisionnaire: { label: 'Rejeté', color: '#EF4444', bg: 'bg-red-100' },
+            reserve_directeur_region: { label: 'Réservé DR', color: '#F59E0B', bg: 'bg-amber-100' },
+            valide_directeur_region: { label: 'Validé DR', color: '#10B981', bg: 'bg-green-100' },
+            rejete_directeur_region: { label: 'Rejeté DR', color: '#EF4444', bg: 'bg-red-100' },
+            valide_divisionnaire: { label: 'Validé Div.', color: '#14B8A6', bg: 'bg-teal-100' },
+            rejete_divisionnaire: { label: 'Rejeté Div.', color: '#EF4444', bg: 'bg-red-100' },
             annule_divisionnaire: { label: 'Annulé', color: '#6B7280', bg: 'bg-gray-100' },
             termine_divisionnaire: { label: 'Terminé', color: '#14B8A6', bg: 'bg-teal-100' }
         };
-        const c = config[statut] || { label: statut, color: '#6B7280', bg: 'bg-gray-100' };
-        return <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.bg}`} style={{ color: c.color }}>{c.label}</span>;
+        
+        const c = config[statut] || { label: statut || '-', color: '#6B7280', bg: 'bg-gray-100' };
+        return <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${c.bg} whitespace-nowrap`} style={{ color: c.color }}>{c.label}</span>;
     };
 
     const getBudgetTotal = (projet) => {
         if (projet.cout_initial_total) return parseFloat(projet.cout_initial_total);
-        const prev = (parseFloat(projet.prev_n_plus2_total) || 0) + (parseFloat(projet.prev_n_plus3_total) || 0) + (parseFloat(projet.prev_n_plus4_total) || 0) + (parseFloat(projet.prev_n_plus5_total) || 0);
+        const prev = (parseFloat(projet.prev_n_plus2_total) || 0) + 
+                     (parseFloat(projet.prev_n_plus3_total) || 0) + 
+                     (parseFloat(projet.prev_n_plus4_total) || 0) + 
+                     (parseFloat(projet.prev_n_plus5_total) || 0);
         const mensuel = parseFloat(projet.prev_n_plus1_total) || 0;
         return prev + mensuel;
     };
@@ -530,13 +1332,13 @@ const ProjetsResponsable = () => {
         return region?.nom_region || regionId;
     };
 
-    // 🔥 Déterminer si le projet peut être modifié (statut = 'soumis')
+    // 🔥 Déterminer si le projet peut être modifié
     const canEdit = (projet) => {
-        const projetStatut = projet.statut_workflow || projet.statut;
-        return projetStatut === 'soumis';
+        const projetStatut = projet.statut_workflow || projet.statut_final;
+        return projetStatut === 'soumis' || projetStatut === 'reserve_directeur_region';
     };
 
-    // 🔥 Actions pour responsable structure
+    // Actions pour responsable structure
     const ResponsableActions = ({ projet }) => {
         const projetId = projet._id || projet.id;
         const showEdit = canEdit(projet);
@@ -557,8 +1359,6 @@ const ProjetsResponsable = () => {
                 </button>
                 <button 
                     onClick={() => { 
-                        console.log("👁️ Détails projet:", projet);
-                        console.log("🆔 ID du projet (MongoDB):", projetId);
                         const projetAvecId = { ...projet, id: projetId };
                         setSelectedProjet(projetAvecId); 
                         setShowDetailsModal(true); 
@@ -571,16 +1371,15 @@ const ProjetsResponsable = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                 </button>
-                {/* 🔥 Bouton Modifier - visible seulement si statut = 'soumis' */}
+                
                 {showEdit && (
                     <button 
                         onClick={() => { 
-                            console.log("✏️ Modification projet:", projet);
                             setSelectedProjet(projet); 
                             setShowEditModal(true); 
                         }} 
                         className="p-1.5 hover:bg-[#FF8500]/10 rounded-full transition" 
-                        title="Modifier le projet (statut: soumis)"
+                        title="Modifier le projet"
                     >
                         <svg className="w-4 h-4 text-gray-500 hover:text-[#FF8500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -590,6 +1389,18 @@ const ProjetsResponsable = () => {
             </div>
         );
     };
+
+    // Écran de chargement initial
+    if (initialLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                <div className="bg-white rounded-2xl p-8 shadow-lg flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-[#FF8500] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-gray-600 font-medium">Chargement des projets...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -630,20 +1441,22 @@ const ProjetsResponsable = () => {
                 getEntiteNom={(projet) => getRegionNom(projet.region_id || projet.region)}
             />
             
-            {/* Bouton Ajouter Projet - visible pour responsable */}
-            <div className="fixed bottom-8 right-8 z-50">
-                <button
-                    onClick={() => handleOpenModal(null)}
-                    className="px-5 py-2.5 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition-all duration-200 flex items-center gap-2 shadow-md shadow-orange-200"
-                >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                    Nouveau Projet
-                </button>
-            </div>
+            {/* Bouton Ajouter Projet - visible seulement si on peut créer */}
+            {(activeTab === 'soumis' || activeTab === 'reserve_directeur_region') && (
+                <div className="fixed bottom-8 right-8 z-50">
+                    <button
+                        onClick={() => handleOpenModal(null)}
+                        className="px-5 py-2.5 bg-[#FF8500] text-white rounded-[20px] text-sm font-medium hover:bg-[#e67800] transition-all duration-200 flex items-center gap-2 shadow-md shadow-orange-200"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                        Nouveau Projet
+                    </button>
+                </div>
+            )}
             
-            {/* Modal de création */}
+            {/* Modales */}
             <AjouterProjetModal
                 key={modalKey}
                 isOpen={showCreateModal}
@@ -653,7 +1466,6 @@ const ProjetsResponsable = () => {
                 axiosInstance={axiosInstance}
             />
             
-            {/* 🔥 Modal de modification - AJOUTER CETTE MODALE */}
             <ModifierProjetModal
                 key={`edit-${modalKey}`}
                 isOpen={showEditModal}
