@@ -1176,30 +1176,58 @@ const ProjetsLayout = ({
         return projet.direction_nom || projet.direction || '-';
     };
 
-    /**
-     * Détermine si le bouton Modifier doit être affiché pour un projet
-     * @param {Object} projet - Le projet à vérifier
-     * @returns {boolean}
-     */
-    const canEdit = (projet) => {
-        // Si showEditButton est explicitement false, cacher
-        if (showEditButton === false) return false;
+    // /**
+    //  * Détermine si le bouton Modifier doit être affiché pour un projet
+    //  * @param {Object} projet - Le projet à vérifier
+    //  * @returns {boolean}
+    //  */
+    // const canEdit = (projet) => {
+    //     // Si showEditButton est explicitement false, cacher
+    //     if (showEditButton === false) return false;
         
-        // Si un callback onEditProjet n'est pas fourni, cacher
-        if (!onEditProjet) return false;
+    //     // Si un callback onEditProjet n'est pas fourni, cacher
+    //     if (!onEditProjet) return false;
         
-        // Admin peut toujours modifier
-        if (userRole === 'admin') return true;
+    //     // Admin peut toujours modifier
+    //     if (userRole === 'admin') return true;
         
-        // Responsable structure ou département: modifier uniquement si statut = 'soumis'
-        if (userRole === 'responsable_structure' || userRole === 'responsable_departement') {
-            const projetStatut = projet.statut_workflow || projet.statut;
-            return projetStatut === 'soumis';
-        }
+    //     // Responsable structure ou département: modifier uniquement si statut = 'soumis'
+    //     if (userRole === 'responsable_structure' || userRole === 'responsable_departement') {
+    //         const projetStatut = projet.statut_workflow || projet.statut;
+    //         return projetStatut === 'soumis';
+    //     }
         
-        // Par défaut, cacher
-        return false;
-    };
+    //     // Par défaut, cacher
+    //     return false;
+    // };
+    // Dans ProjetsLayout.jsx, vers la ligne 200-220
+
+/**
+ * Détermine si le bouton Modifier doit être affiché pour un projet
+ * @param {Object} projet - Le projet à vérifier
+ * @returns {boolean}
+ */
+const canEdit = (projet) => {
+    // Si showEditButton est explicitement false, cacher
+    if (showEditButton === false) return false;
+    
+    // Si un callback onEditProjet n'est pas fourni, cacher
+    if (!onEditProjet) return false;
+    
+    // Admin peut toujours modifier
+    if (userRole === 'admin') return true;
+    
+    // 🔥 Responsable structure ou département: 
+    //    Peut modifier si statut = 'soumis' OU 'reserve_directeur_region'
+    if (userRole === 'responsable_structure' || userRole === 'responsable_departement') {
+        const projetStatut = projet.statut_workflow || projet.statut || projet.statut_final;
+        return projetStatut === 'soumis' || projetStatut === 'reserve_directeur_region'||
+           projetStatut === 'reserve_directeur_direction';;
+    }
+    
+    // Par défaut, cacher
+    return false;
+};
 
     const handleEdit = (projet) => {
         if (onEditProjet && canEdit(projet)) {
