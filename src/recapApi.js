@@ -45,6 +45,19 @@ export const fetchComparaisonProjet = (codeDivision) =>
 // recapApi.js
 export const fetchChampsModifiables = (codeDivision) =>
   axiosInstance.get(`/recap/budget/projet/${codeDivision}/champs-modifiables/`);
+export const fetchDashboardCounters = (codeDivision) =>
+  axiosInstance.get(`/recap/dashboard/counters/`);
+export const fetchDashboardProjetsPmt = (codeDivision) =>
+  axiosInstance.get(`/recap/dashboard/projets-pmt/`);
+export const fetchUsers = (codeDivision) =>
+  axiosInstance.get(`/api/users/`);
+export const fetchDashboardProjetsByYear = (codeDivision) =>
+  axiosInstance.get(`/recap/dashboard/projects-by-pmt-year/`);
+export const fetchDashboardTopRegion = (codeDivision) =>
+  axiosInstance.get(`/recap/dashboard/top-5-regions/`);
+export const fetchDashboardStats = () =>
+  axiosInstance.get('/recap/ProjetsDashboard');
+
 // import { axiosInstance } from "./axios";
 
 // export const fetchRecapRegion = (uploadId = 1) =>

@@ -22,6 +22,7 @@ import ProjetsChef from "./Components/admin/Components/Projets/ProjetsChef";
 import RecapDashboard from "./Components/admin/Components/Recap/RecapDashboard";
 import ProjetsDirecteur from "./Components/admin/Components/Projets/ProjetsDirecteur";
 import ProjetsDivisionnaire from "./Components/admin/Components/Projets/ProjetsDivisionnaire";
+import Dashboard from './Components/admin/Components/dashboard';
 
 
 
@@ -55,8 +56,8 @@ const router = createBrowserRouter([
     path: "/admin",
     element: <AdminLayout />,
     children: [
-      { index: true, element: <div>Dashboard admin</div> },
-      { path: "dashboard", element: <div>Dashboard admin</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       // { path: "dashboard", element: <RecapDashboardversion/>},
       { path: "recap", element: <RecapDashboard /> },
       { path: "utilisateurs", element: <UsersListe /> },
@@ -101,11 +102,14 @@ const router = createBrowserRouter([
     path: '/chef',
     element: <ChefLayout />,
     children: [
-      { index: true, element: <div>Dashboard Chef</div> },
-      { path: 'dashboard', element: <div>Dashboard Chef</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'projets', element: <ProjetsChef /> },
       { path: 'parametres', element: <Parametres /> },
       { path: 'equipe', element: <RecapDashboard /> },
+      { path: "recap", element: <RecapDashboard /> },
+      { path: "classification", element: <Classification/> },
+
       // 🔥 Route notifications pour chef
       { path: 'notifications', element: <NotificationsPage /> },
     ]
@@ -114,11 +118,13 @@ const router = createBrowserRouter([
     path: '/directeur',
     element: <DirecteurLayout />,
     children: [
-      { index: true, element: <div>Dashboard Directeur</div> },
-      { path: 'dashboard', element: <div>Dashboard Directeur</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'regions', element: <div>Gestion Régions</div> },
       { path: 'directeurs-region', element: <div>Gestion Directeurs Région</div> },
       { path: 'projets', element: <ProjetsDirecteur /> },
+      { path: "recap", element: <RecapDashboard /> },
+      { path: "classification", element: <Classification/> },
       // 🔥 Route notifications pour directeur
       { path: 'notifications', element: <NotificationsPage /> },
     ]
@@ -127,8 +133,8 @@ const router = createBrowserRouter([
     path: '/directeur-region',
     element: <DirecteurRegionLayout />,
     children: [
-      { index: true, element: <div>Dashboard Directeur Région</div> },
-      { path: 'dashboard', element: <div>Dashboard Directeur Région</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'structures', element: <div>Structures</div> },
       { path: 'responsables', element: <div>Responsables</div> },
       { path: 'projets', element: <ProjetsDirecteurRegion /> },
@@ -141,8 +147,8 @@ const router = createBrowserRouter([
     path: '/responsable-structure',
     element: <ResponsableStructureLayout />,
     children: [
-      { index: true, element: <div>Dashboard Responsable structure</div> },
-      { path: 'dashboard', element: <ProjetsListe /> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'projets', element: <ProjetsResponsable /> },
       { path: 'equipe', element: <div>Mon Equipe</div> },
       { path: 'activites', element: <div>Activités</div> },
@@ -154,11 +160,14 @@ const router = createBrowserRouter([
     path: '/divisionnaire',
     element: <DivisionnaireLayout />,
     children: [
-      { index: true, element: <div>Dashboard Divisionnaire</div> },
-      { path: 'dashboard', element: <div>Dashboard Divisionnaire</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'rapports', element: <div>Rapports</div> },
       { path: 'statistiques', element: <div>Statistiques</div> },
       { path: 'projets', element: <ProjetsDivisionnaire /> },
+      { path: "recap", element: <RecapDashboard /> },
+      { path: "classification", element: <Classification/> },
+
       // 🔥 Route notifications pour divisionnaire
       { path: 'notifications', element: <NotificationsPage /> },
             { path: "recap", element: <RecapDashboard /> },
@@ -170,8 +179,8 @@ const router = createBrowserRouter([
     path: '/responsable-departement',
     element: <ResponsableDepartementLayout />,
     children: [
-      { index: true, element: <div>responsable_departement</div> },
-      { path: 'dashboard', element: <div>Dashboard Divisionnaire</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'rapports', element: <div>Rapports</div> },
       { path: 'statistiques', element: <div>Statistiques</div> },
       { path: 'projets', element: <ProjetsResponsableDepartement /> },
@@ -183,8 +192,8 @@ const router = createBrowserRouter([
     path: '/directeur-direction',
     element: <DirecteurDirectionLayout />,
     children: [
-      { index: true, element: <div>directeur_direction</div> },
-      { path: 'dashboard', element: <div>Dashboard Directeur Direction</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'affectation', element: <AffectationResponsableDepartement /> },
       { path: 'projets', element: <ProjetsDirecteurDirection /> },
       // 🔥 Route notifications pour directeur direction
@@ -196,8 +205,12 @@ const router = createBrowserRouter([
     element: <AgentLayout />,
     children: [
       { index: true, element: <div>Dashboard Agent</div> },
-      { path: 'dashboard', element: <div>Dashboard Agent</div> },
+      { index: true, element: <Dashboard/> },
+      { path: "dashboard", element: <Dashboard/> },
       { path: 'projets', element: <ProjetsAgent /> },
+      { path: "recap", element: <RecapDashboard /> },
+      { path: "classification", element: <Classification/> },
+
       { path: 'taches', element: <div>Mes Tâches</div> },
       { path: 'profile', element: <div>Mon Profil</div> },
       // 🔥 Route notifications pour agent
