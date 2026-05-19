@@ -58,6 +58,15 @@ export const fetchDashboardTopRegion = (codeDivision) =>
 export const fetchDashboardStats = () =>
   axiosInstance.get('/recap/ProjetsDashboard');
 
+// recapApi.js - AJOUTER CES DEUX NOUVELLES FONCTIONS
+
+// Dashboard pour Directeur Direction
+export const fetchDirectionDirectorDashboard = () =>
+  axiosInstance.get("recap/dashboard/direction-director/");
+
+// Dashboard pour Directeur Région
+export const fetchRegionalDirectorDashboard = () =>
+  axiosInstance.get("recap/dashboard/regional-director/");
 // import { axiosInstance } from "./axios";
 
 // export const fetchRecapRegion = (uploadId = 1) =>

@@ -28,7 +28,6 @@ import Dashboard from './Components/admin/Components/dashboard';
 
 
 
-
 import Classification from "./Components/admin/Components/classification/Classification";
 
 
@@ -42,6 +41,9 @@ import ProjetChampsModifiables from './Components/admin/Components/Comparaison/P
 
 // 🔥 Import des composants de notification
 import NotificationsPage from './Components/Notification/NotificationsPage';
+import DirectionDirectorDashboard from './Components/admin/Components/DirectionDirectorDashboard';
+import RegionalDirectorDashboard from './Components/admin/Components/RegionalDirectorDashboard';
+
 
 const router = createBrowserRouter([
    {
@@ -139,6 +141,8 @@ const router = createBrowserRouter([
       { path: 'responsables', element: <div>Responsables</div> },
       { path: 'projets', element: <ProjetsDirecteurRegion /> },
       { path: 'affectation', element: <AffectationResponsable /> },
+      { path: 'rapport', element: <RegionalDirectorDashboard /> },
+      
       // 🔥 Route notifications pour directeur région
       { path: 'notifications', element: <NotificationsPage /> },
     ]
@@ -196,6 +200,7 @@ const router = createBrowserRouter([
       { path: "dashboard", element: <Dashboard/> },
       { path: 'affectation', element: <AffectationResponsableDepartement /> },
       { path: 'projets', element: <ProjetsDirecteurDirection /> },
+      { path: 'rapport', element: <DirectionDirectorDashboard /> },
       // 🔥 Route notifications pour directeur direction
       { path: 'notifications', element: <NotificationsPage /> },
     ]
