@@ -134,7 +134,7 @@ export const ResponsableDepartementLayout = () => {
             <span className="text-green-600">Sonatrach</span>
             <span className="text-orange-500">Budget</span>
           </h2>
-          {!loading && (
+          {/* {!loading && (
             <>
               {directionName && (
                 <p className="text-xs text-gray-500 mt-1">
@@ -147,7 +147,7 @@ export const ResponsableDepartementLayout = () => {
                 </p>
               )}
             </>
-          )}
+          )} */}
         </div>
         
         <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300">

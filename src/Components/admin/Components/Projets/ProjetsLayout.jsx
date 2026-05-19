@@ -1099,6 +1099,10 @@ const ProjetsLayout = ({
     userRole = null,           // 'admin', 'responsable_structure', 'responsable_departement'
     onEditProjet = null,       // Callback pour modifier
     showEditButton = true,     // Forcer l'affichage ou non du bouton modifier
+        // 🔥 NOUVELLE PROP : Bouton d'export Excel
+    onExportExcel = null,  // Callback pour l'export Excel
+    exportLabel = "Exporter Excel", // Label du bouton
+    showExportButton = true, // Afficher ou non le bouton d'export
 }) => {
     const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -1174,6 +1178,12 @@ const ProjetsLayout = ({
         }
         
         return projet.direction_nom || projet.direction || '-';
+    };
+      // 🔥 Gestionnaire d'export
+    const handleExport = () => {
+        if (onExportExcel) {
+            onExportExcel();
+        }
     };
 
     // /**
@@ -1271,7 +1281,7 @@ const canEdit = (projet) => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <style>{styles}</style>
             
-            <motion.div 
+            {/* <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -1289,6 +1299,45 @@ const canEdit = (projet) => {
                                 <span className="text-sm text-gray-500">Chargement...</span>
                             </div>
                         )}
+                    </div>
+                </div>
+            </motion.div> */}
+            
+            <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-sm bg-white/95"
+            >
+                <div className="px-8 py-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+                            <p className="text-gray-500 mt-1">{subtitle}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {/* 🔥 NOUVEAU : Bouton d'export Excel */}
+                            {showExportButton && onExportExcel && (
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handleExport}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition shadow-md"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                                    </svg>
+                                    {exportLabel}
+                                </motion.button>
+                            )}
+                            
+                            {loading && (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-[#FF8500] rounded-full animate-pulse" />
+                                    <span className="text-sm text-gray-500">Chargement...</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </motion.div>

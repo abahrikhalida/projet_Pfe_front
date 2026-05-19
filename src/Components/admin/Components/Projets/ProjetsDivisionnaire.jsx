@@ -28,6 +28,118 @@ const ProjetsDivisionnaire = () => {
     const [showSuccess, setShowSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [counts, setCounts] = useState({});
+    const [exporting, setExporting] = useState(false); // 🔥 État pour l'export
+
+    // 🔥 Fonction d'export Excel pour Divisionnaire
+    // const handleExportExcel = async () => {
+    //     setExporting(true);
+    //     try {
+    //         // Utilisation de l'année courante + 1 comme dans votre backend
+    //         const annee = new Date().getFullYear() + 1;
+            
+    //         console.log("📊 Export Excel Divisionnaire - Année:", annee);
+            
+    //         const response = await axiosInstance.get('/recap/budget/export/valides-divisionnaire/', {
+    //             responseType: 'blob' // Important pour les fichiers
+    //         });
+            
+    //         // Créer un lien de téléchargement
+    //         const url = window.URL.createObjectURL(new Blob([response.data]));
+    //         const link = document.createElement('a');
+    //         link.href = url;
+            
+    //         // Extraire le nom du fichier depuis l'en-tête Content-Disposition si disponible
+    //         const contentDisposition = response.headers['content-disposition'];
+    //         let filename = `projets_valides_divisionnaire_${annee}.xlsx`;
+    //         if (contentDisposition) {
+    //             const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    //             if (filenameMatch && filenameMatch[1]) {
+    //                 filename = filenameMatch[1].replace(/['"]/g, '');
+    //             }
+    //         }
+            
+    //         link.setAttribute('download', filename);
+    //         document.body.appendChild(link);
+    //         link.click();
+    //         link.remove();
+    //         window.URL.revokeObjectURL(url);
+            
+    //         // Message de succès
+    //         setSuccessMessage(`Export Excel lancé avec succès pour l'année ${annee}`);
+    //         setShowSuccess(true);
+    //         setTimeout(() => setShowSuccess(false), 3000);
+            
+    //     } catch (err) {
+    //         console.error("❌ Erreur lors de l'export Excel:", err);
+            
+    //         // Gestion d'erreur détaillée
+    //         let errorMessage = "Erreur lors de l'export Excel";
+    //         if (err.response?.data instanceof Blob) {
+    //             // Si l'erreur est un blob, essayer de lire le texte
+    //             const text = await err.response.data.text();
+    //             try {
+    //                 const errorData = JSON.parse(text);
+    //                 errorMessage = errorData.message || errorData.error || errorMessage;
+    //             } catch {
+    //                 errorMessage = text || errorMessage;
+    //             }
+    //         } else if (err.response?.data?.message) {
+    //             errorMessage = err.response.data.message;
+    //         }
+            
+    //         alert(`❌ ${errorMessage}`);
+    //     } finally {
+    //         setExporting(false);
+    //     }
+    // };
+const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+        // Plus besoin du paramètre année
+        const response = await axiosInstance.get('/recap/budget/export/valides-projects/', {
+            responseType: 'blob'
+        });
+        
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = 'projets_valides_divisionnaire.xlsx';
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (match && match[1]) {
+                filename = match[1].replace(/['"]/g, '');
+            }
+        }
+        
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        setSuccessMessage("Export Excel lancé avec succès");
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+        
+    } catch (err) {
+        console.error("Erreur export:", err);
+        
+        if (err.response && err.response.status === 404) {
+            try {
+                const errorData = JSON.parse(await err.response.data.text());
+                alert(errorData.message || "Aucune donnée trouvée");
+            } catch {
+                alert("Aucun projet validé par le divisionnaire à exporter");
+            }
+        } else {
+            alert("Erreur lors de l'export Excel");
+        }
+    } finally {
+        setExporting(false);
+    }
+};
     
     const isInitialMount = useRef(true);
     const isFetching = useRef(false);
@@ -147,7 +259,7 @@ const ProjetsDivisionnaire = () => {
             if (response.data) {
                 setBatchStats({
                     count: response.data.count || 0,
-                    annee: response.data.annee || new Date().getFullYear(),
+                    annee: response.data.annee ,
                     total: response.data.total || {}
                 });
                 setBatchProjets(response.data.projets || []);
@@ -359,6 +471,7 @@ const ProjetsDivisionnaire = () => {
             <ProjetsLayout
                 title="Tableau de bord - Divisionnaire"
                 subtitle="Validez, rejetez ou annulez les projets approuvés par le Directeur"
+   
                 tabs={tabs}
                 projets={projets}
                 loading={loading}
@@ -385,6 +498,9 @@ const ProjetsDivisionnaire = () => {
                 entiteType="mixte"
                 entiteLabel="Entité"
                 getEntiteNom={getEntiteNom}
+                 onExportExcel={handleExportExcel}
+               exportLabel={exporting ? "Export en cours..." : "Exporter Excel"}
+              showExportButton={true}
                 // 🔥 Bouton de validation par lot - uniquement pour Divisionnaire
                 customActionsButton={
                     activeTab === 'a_valider' && batchStats && batchStats.count > 0 ? (
