@@ -4016,7 +4016,7 @@ const AjouterProjetModal = ({ isOpen, onClose, onSuccess, projet, axiosInstance:
         if (!finProjet) return null;
         return (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
-                <span className="text-lg">📐</span>
+                <span className="text-lg"></span>
                 <div className="text-sm text-blue-800">
                     <strong>Plage de réalisation calculée :</strong>{' '}
                     {MOIS_LABELS[parseInt(formData.mois_debut_projet)]} {formData.annee_debut_projet}

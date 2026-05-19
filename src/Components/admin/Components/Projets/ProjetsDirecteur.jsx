@@ -28,6 +28,56 @@ const ProjetsDirecteur = () => {
     
     const isInitialMount = useRef(true);
     const isFetching = useRef(false);
+    const [exporting, setExporting] = useState(false);
+
+const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+        // Plus besoin du paramètre année
+        const response = await axiosInstance.get('/recap/budget/export/valides-projects/', {
+            responseType: 'blob'
+        });
+        
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = 'projets_valides_divisionnaire.xlsx';
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (match && match[1]) {
+                filename = match[1].replace(/['"]/g, '');
+            }
+        }
+        
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        setSuccessMessage("Export Excel lancé avec succès");
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+        
+    } catch (err) {
+        console.error("Erreur export:", err);
+        
+        if (err.response && err.response.status === 404) {
+            try {
+                const errorData = JSON.parse(await err.response.data.text());
+                alert(errorData.message || "Aucune donnée trouvée");
+            } catch {
+                alert("Aucun projet validé par le divisionnaire à exporter");
+            }
+        } else {
+            alert("Erreur lors de l'export Excel");
+        }
+    } finally {
+        setExporting(false);
+    }
+};
 
     // Tabs pour Directeur National
     const tabs = [
@@ -358,6 +408,9 @@ const ProjetsDirecteur = () => {
                 entiteLabel="Entité"
 
                 getEntiteNom={getEntiteNom}
+                onExportExcel={handleExportExcel}
+exportLabel={exporting ? "Export en cours..." : "Exporter Excel"}
+showExportButton={true}
 
             />
             
